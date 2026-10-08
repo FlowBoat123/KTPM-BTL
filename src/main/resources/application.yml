@@ -1,0 +1,33 @@
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${PORT:8080}
+spring:
+  application:
+    name: dental-clinic
+  profiles:
+    default: demo
+  datasource:
+    url: jdbc:sqlite:${DB_PATH:dental-clinic.db}?foreign_keys=on&busy_timeout=5000
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
+      connection-test-query: SELECT 1
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  sql:
+    init:
+      mode: always
+      separator: ";;"
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+app:
+  jwt-secret: ${JWT_SECRET:}
+  jwt-ttl-minutes: 120
+  zone: Asia/Ho_Chi_Minh
+  bootstrap:
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}

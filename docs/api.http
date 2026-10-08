@@ -1,0 +1,81 @@
+### REST Client (VS Code) / IntelliJ HTTP Client
+@baseUrl = http://localhost:8080
+@date = 2030-01-02
+@adminToken = paste-admin-token
+@doctorToken = paste-doctor-token
+@appointmentId = 1
+@appointmentCode = paste-booking-code
+
+### Clinic
+GET {{baseUrl}}/api/clinic
+
+### Services
+GET {{baseUrl}}/api/services
+
+### Doctors
+GET {{baseUrl}}/api/doctors
+
+### Book WITHOUT doctorId; use a future date
+POST {{baseUrl}}/api/appointments
+Content-Type: application/json
+
+{
+  "patientName": "Nguyen Van A",
+  "phone": "0912345678",
+  "email": "patient@example.com",
+  "serviceId": 2,
+  "preferredDate": "{{date}}",
+  "preferredTime": "09:00",
+  "note": "Kham rang"
+}
+
+### Lookup with code returned by booking
+GET {{baseUrl}}/api/appointments/{{appointmentCode}}
+
+### Admin login; copy accessToken to adminToken
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"username":"admin","password":"Admin123!"}
+
+### Assign; replace appointmentId with ID from booking
+PATCH {{baseUrl}}/api/admin/appointments/{{appointmentId}}/assign
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{"doctorId":1,"appointmentDate":"{{date}}","startTime":"09:00"}
+
+### Doctor login; copy accessToken to doctorToken
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"username":"doctor1","password":"Doctor123!"}
+
+### Assigned appointments
+GET {{baseUrl}}/api/doctor/appointments
+Authorization: Bearer {{doctorToken}}
+
+### Confirm
+PATCH {{baseUrl}}/api/doctor/appointments/{{appointmentId}}/status
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+
+{"status":"CONFIRMED"}
+
+### Complete
+PATCH {{baseUrl}}/api/doctor/appointments/{{appointmentId}}/status
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+
+{"status":"COMPLETED"}
+
+### Available slots with service duration
+GET {{baseUrl}}/api/doctors/1/available-slots?date={{date}}&serviceId=2
+
+### Current account
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{doctorToken}}
+
+### Logout immediately revokes this token
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{doctorToken}}
