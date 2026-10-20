@@ -458,4 +458,17 @@ class ApiIntegrationTest {
             jdbc.update(
                 "UPDATE appointments SET service_id=999999 WHERE id=?", b.get("id").asLong()));
   }
+
+  @Test
+  void openApiSpecificationAndSwaggerUiAreAccessible() throws Exception {
+    mvc.perform(get("/v3/api-docs"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.openapi").exists())
+        .andExpect(jsonPath("$.info.title").value("Dental Clinic Management API"))
+        .andExpect(jsonPath("$.paths['/api/admin/appointments']").exists())
+        .andExpect(jsonPath("$.components.securitySchemes.BearerAuth").exists());
+
+    mvc.perform(get("/swagger-ui/index.html"))
+        .andExpect(status().isOk());
+  }
 }

@@ -37,6 +37,11 @@ public class SecurityConfig {
             a ->
                 a.requestMatchers("/error")
                     .permitAll()
+                    .requestMatchers(
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html")
+                    .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/appointments")
                     .permitAll()
                     .requestMatchers(

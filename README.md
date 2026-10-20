@@ -57,6 +57,9 @@ chmod +x mvnw
 
 API chạy tại **http://localhost:8080**. Mặc định chỉ lắng nghe `127.0.0.1`. SQLite tự tạo file `dental-clinic.db` trong thư mục làm việc, không cần cài database server. Dữ liệu lưu lại khi tắt và mở ứng dụng.
 
+- **Swagger UI (Interactive API Docs)**: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- **OpenAPI 3 JSON Schema**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
 Profile mặc định `demo` tạo dữ liệu mẫu khi chưa có: thông tin phòng khám, 3 dịch vụ và các tài khoản sau.
 
 | Username | Password | Vai trò |
@@ -265,6 +268,25 @@ java -jar target/dental-clinic-0.0.1-SNAPSHOT.jar
 ```
 
 Kiểm thử tích hợp dùng file SQLite tạm riêng, thời gian cố định; không sửa database chạy thử. Các ca kiểm tra bao gồm đặt lịch, phân công, chuyển trạng thái, quyền sở hữu lịch, trùng giờ/thời lượng, hủy lịch, quản lý bác sĩ, JWT, đăng xuất, khóa ngoại và trigger database. GitHub Actions chạy `verify` trên JDK 17.
+
+## Triển khai bằng Docker (PostgreSQL 16)
+
+Hệ thống hỗ trợ đóng gói container với Multi-stage build (JDK 17 $\rightarrow$ JRE 17 Alpine) và PostgreSQL 16:
+
+```bash
+docker compose up -d --build
+```
+
+Lệnh trên sẽ tự động:
+1. Khởi động PostgreSQL 16 Alpine container kèm healthcheck.
+2. Build và chạy Backend Spring Boot, tự động kết nối PostgreSQL và seed dữ liệu mẫu.
+3. Truy cập Swagger UI tại: `http://localhost:8080/swagger-ui/index.html`.
+
+## Kiểm thử tải trên Kaggle CPU (Load Testing)
+
+Dự án cung cấp kịch bản kiểm thử tải bằng **Python Locust** ([locustfile.py](locustfile.py)):
+- Mô phỏng đồng thời 50 users duyệt catalog, kiểm tra khung giờ trống và đặt lịch khám.
+- Chi tiết hướng dẫn thực hiện và vẽ biểu đồ hiệu năng trên Kaggle Notebook CPU: xem [docs/KAGGLE_LOAD_TEST.md](docs/KAGGLE_LOAD_TEST.md).
 
 ## Phạm vi phiên bản cơ bản
 

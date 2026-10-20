@@ -61,7 +61,7 @@ public class DataInitializer implements ApplicationRunner {
       service("Lay cao rang", 60, "300000");
       service("Nho rang", 60, "500000");
     }
-    boolean demo = env.acceptsProfiles(Profiles.of("demo"));
+    boolean demo = env.acceptsProfiles(Profiles.of("demo", "postgres"));
     String username = demo ? "admin" : adminUsername, password = demo ? "Admin123!" : adminPassword;
     if (!username.isBlank() && accounts.findByUsername(username).isEmpty()) {
       if (password.length() < 8
