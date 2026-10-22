@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dental-clinic-db
+    environment:
+      POSTGRES_DB: dental_clinic
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dental_clinic"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dental-clinic-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - SERVER_ADDRESS=0.0.0.0
+      - SPRING_PROFILES_ACTIVE=postgres
+      - DB_URL=jdbc:postgresql://postgres:5432/dental_clinic
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgrespassword
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
