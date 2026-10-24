@@ -1,27 +1,45 @@
 package com.dental;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import com.dental.entity.*;
-import com.dental.repository.*;
+import com.dental.entity.Account;
+import com.dental.entity.LoginSession;
+import com.dental.repository.AccountRepository;
+import com.dental.repository.LoginSessionRepository;
 import com.dental.security.JwtService;
-import com.fasterxml.jackson.databind.*;
-import java.nio.file.*;
-import java.time.*;
-import java.util.*;
-import org.junit.jupiter.api.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.*;
-import org.springframework.test.web.servlet.*;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -192,6 +210,11 @@ class ApiIntegrationTest {
     assign(a, 1, "09:00", admin()).andExpect(status().isOk());
     String other = login("doctor2", "Doctor123!");
     mvc.perform(
+            get("/api/doctor/appointments")
+                .header("Authorization", "Bearer " + other))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+    mvc.perform(
             get("/api/doctor/appointments/" + a.get("id").asLong())
                 .header("Authorization", "Bearer " + other))
         .andExpect(status().isForbidden());
@@ -201,6 +224,23 @@ class ApiIntegrationTest {
     mvc.perform(get("/api/admin/appointments")).andExpect(status().isUnauthorized());
     mvc.perform(get("/api/doctor/profile").header("Authorization", "Bearer " + admin()))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void doctorCanCancelAssignedAppointmentButCannotReopenIt() throws Exception {
+    JsonNode a = book(1, "09:00");
+
+    assign(a, 1, "09:00", admin())
+            .andExpect(status().isOk());
+
+    String doctor = doctor1();
+
+    change(a, "doctor", "CANCELLED", doctor)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+    change(a, "doctor", "CONFIRMED", doctor)
+            .andExpect(status().isConflict());
   }
 
   @Test

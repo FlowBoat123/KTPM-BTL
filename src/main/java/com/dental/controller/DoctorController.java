@@ -1,15 +1,18 @@
 package com.dental.controller;
 
-import com.dental.dto.*;
+import com.dental.dto.Requests;
+import com.dental.dto.Responses;
 import com.dental.security.CurrentUser;
-import com.dental.service.*;
+import com.dental.service.AppointmentService;
+import com.dental.service.DoctorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/doctor")
@@ -38,7 +41,7 @@ public class DoctorController {
   }
 
   @PatchMapping("/appointments/{id}/status")
-  @Operation(summary = "Bác sĩ đổi trạng thái lịch hẹn", description = "Bác sĩ cập nhật trạng thái (CONFIRMED hoặc COMPLETED)")
+  @Operation(summary = "Bác sĩ đổi trạng thái lịch hẹn", description = "Bác sĩ cập nhật trạng thái (CONFIRMED, COMPLETED hoặc CANCELLED)")
   public Responses.AppointmentView status(
       @AuthenticationPrincipal CurrentUser user,
       @PathVariable Long id,
