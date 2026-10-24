@@ -481,6 +481,68 @@ class ApiIntegrationTest {
   }
 
   @Test
+  void patientApiNotFoundAndEdgeCases() throws Exception {
+    // 1. Tra cứu mã đặt lịch không tồn tại -> 404
+    mvc.perform(get("/api/appointments/non-existent-code"))
+        .andExpect(status().isNotFound());
+
+    // 2. Hủy lịch với mã không tồn tại -> 404
+    mvc.perform(delete("/api/appointments/non-existent-code"))
+        .andExpect(status().isNotFound());
+
+    // 3. Xem chi tiết bác sĩ không tồn tại -> 404
+    mvc.perform(get("/api/doctors/9999"))
+        .andExpect(status().isNotFound());
+
+    // 4. Xem lịch trống với bác sĩ không tồn tại -> 404
+    mvc.perform(get("/api/doctors/9999/available-slots?date=2030-01-02"))
+        .andExpect(status().isNotFound());
+
+    // 5. Xem lịch trống với serviceId không tồn tại -> 404
+    mvc.perform(get("/api/doctors/1/available-slots?date=2030-01-02&serviceId=9999"))
+        .andExpect(status().isNotFound());
+
+    // 6. Đặt lịch với email sai định dạng -> 400
+    var badEmail = booking(1, "09:00");
+    badEmail.put("email", "not-a-valid-email");
+    mvc.perform(
+            post("/api/appointments")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(badEmail)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errors.email").exists());
+
+    // 7. Đặt lịch với tên bệnh nhân để trống -> 400
+    var blankName = booking(1, "09:00");
+    blankName.put("patientName", "   ");
+    mvc.perform(
+            post("/api/appointments")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(blankName)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errors.patientName").exists());
+
+    // 8. Hủy lịch 2 lần liên tiếp -> lần 2 bị 409 Conflict
+    JsonNode appt = book(1, "09:00");
+    String code = appt.get("code").asText();
+    mvc.perform(delete("/api/appointments/" + code))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("CANCELLED"));
+    mvc.perform(delete("/api/appointments/" + code))
+        .andExpect(status().isConflict());
+
+    // 9. Không thể hủy lịch sau khi giờ hẹn đã qua -> 409 Conflict
+    String pastCode = UUID.randomUUID().toString();
+    jdbc.update(
+        "INSERT INTO appointments (code, patient_name, phone, service_id, preferred_date, preferred_time, status, created_at) "
+            + "VALUES (?, 'Past Patient', '0912345678', 1, '2029-12-31', '09:00:00', 'PENDING', ?)",
+        pastCode,
+        NOW.toString());
+    mvc.perform(delete("/api/appointments/" + pastCode))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
   void databaseTriggersProtectOverlapsEvenWhenServiceIsBypassed() throws Exception {
     String token = admin();
     JsonNode a = book(2, "09:00"), b = book(1, "10:00");
