@@ -46,6 +46,12 @@ public class CatalogService {
     return d;
   }
 
+  public Doctor activeDoctorWithLock(Long id) {
+    Doctor d = doctors.findByIdWithLock(id).orElseThrow(() -> ApiException.notFound("Doctor not found"));
+    if (!d.getAccount().getActive()) throw ApiException.notFound("Doctor not found");
+    return d;
+  }
+
   public Responses.DoctorView doctor(Long id) {
     return ViewMapper.doctor(activeDoctor(id));
   }
