@@ -21,7 +21,32 @@ Nguồn yêu cầu: [2026.md](https://github.com/maytinhdibo/KTPM-architecture-s
 
 ## Bằng chứng Kaggle
 
-Đang chuẩn bị chạy; chưa ghi nhận số liệu Kaggle trong tài liệu này. Không sử dụng kết quả local thay cho yêu cầu Kaggle.
+Đã chạy trên Kaggle CPU ngày **25/10/2026**, phiên bản notebook **1**, mã nguồn sạch ở commit `8e7b4476e12257292475b1d0aa19ba26ae103ae8`.
+
+- [Notebook đã chạy, version 362009941](https://www.kaggle.com/code/flowboat/ktpm-phase-1-sqlite-cpu-baseline?scriptVersionId=362009941). Notebook đang ở chế độ riêng tư trong tài khoản chủ dự án; bản sao kết quả thô bên dưới nằm trong GitHub công khai để có thể đối chiếu mà không cần đăng nhập Kaggle.
+- [Toàn bộ gói bằng chứng ZIP](evidence/kaggle-20261025/results.zip).
+- [CSV từng endpoint](evidence/kaggle-20261025/locust_stats.csv), [lịch sử tải](evidence/kaggle-20261025/locust_stats_history.csv), [metadata](evidence/kaggle-20261025/metadata.json), [preflight](evidence/kaggle-20261025/preflight.json), [báo cáo](evidence/kaggle-20261025/REPORT.md).
+- [CI kiểm thử Java 17 và Docker trên commit được đo](https://github.com/FlowBoat123/KTPM-BTL/actions/runs/40161994919).
+
+| Thông số | Kết quả |
+| --- | --- |
+| Môi trường | Kaggle CPU, không GPU/TPU |
+| CPU / RAM | Intel Xeon 2.20 GHz; 4 CPU logic; cgroup CPU quota 4; RAM limit 30 GiB |
+| Database / JVM | SQLite; pool 1; journal `delete`; JDK 17; heap 512 MiB |
+| Tải | 50 users; tăng 5 users/giây; warm-up 15 giây; đo 120 giây (bao gồm giai đoạn tăng users) |
+| Request | 6.511 |
+| Request lỗi | 0 (0%) |
+| Throughput | 54,56 request/giây |
+| Độ trễ trung bình | 6,79 ms |
+| Độ trễ P95 | 16 ms |
+
+![P95 theo endpoint](evidence/kaggle-20261025/p95_latency.png)
+
+[Ảnh xác nhận kết quả trong notebook Kaggle](evidence/kaggle-20261025/notebook-result.jpg).
+
+Preflight đã đạt: tạo lịch và ghi chú dài, phân công/hoàn thành, thiếu token 401, sai quyền 403, trùng giờ 409 và thu hồi token khi đăng xuất. Dữ liệu nguồn là giả lập. Thống kê đo chính tách khỏi warm-up; gói ZIP giữ cả số liệu warm-up và log.
+
+Đây là kết quả của một cấu hình và một lần đo, không phải giới hạn tải tối đa của hệ thống. Để đánh giá biến thiên hoặc so sánh Pha 2, cần chạy lại cùng cấu hình và có thể lặp nhiều lần.
 
 ## Giới hạn
 

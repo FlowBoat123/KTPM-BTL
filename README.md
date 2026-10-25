@@ -295,6 +295,8 @@ Script tự dọn container/volume thử nghiệm; không dùng database local h
 
 Mở [notebooks/phase1_sqlite_kaggle.ipynb](notebooks/phase1_sqlite_kaggle.ipynb) trên Kaggle, chọn CPU/Internet On và Run All. Notebook chạy kiểm thử, đo Locust, tạo CSV/HTML/đồ thị và metadata commit/phần cứng. Xem [hướng dẫn](docs/KAGGLE_LOAD_TEST.md) và [bảng nghiệm thu](docs/PHASE1_ACCEPTANCE.md).
 
+Đã đo trên Kaggle CPU ngày 25/10/2026 với SQLite: 50 users, đo 120 giây, 6.511 request, 0 lỗi, 54,56 request/giây, P95 16 ms. [Xem kết quả thô và cấu hình đo](docs/PHASE1_ACCEPTANCE.md#bằng-chứng-kaggle). Đây là một baseline, không phải phép đo tải tối đa.
+
 SQLite là database cho cả local, Docker mặc định và baseline Kaggle. Profile `local` dùng SQLite nhưng chỉ bootstrap Admin do bạn cấu hình; profile `kaggle` dùng SQLite với tài khoản giả lập. PostgreSQL chỉ còn là adapter tùy chọn, không thuộc phép đo baseline này.
 
 ## Ranh giới tầng nghiệp vụ
