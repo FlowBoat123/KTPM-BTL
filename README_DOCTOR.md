@@ -77,7 +77,7 @@ ViewMapper -> Responses DTO -> JSON response
 | `dto/Requests.java` | Các DTO request và quy tắc validation đầu vào. |
 | `dto/Responses.java` | Các DTO response công khai của API; không trả trực tiếp entity hoặc dữ liệu mật khẩu. |
 | `dto/ViewMapper.java` | Chuyển Entity thành DTO response. |
-| `exception/ApiException.java` và exception handler | Biểu diễn lỗi nghiệp vụ và chuẩn hóa response lỗi. |
+| `exception/BusinessException.java` và exception handler | Biểu diễn lỗi nghiệp vụ và chuẩn hóa response lỗi. |
 | `src/test/java/com/dental/ApiIntegrationTest.java` | Kiểm thử tích hợp API qua HTTP, gồm phân quyền và các quy tắc nghiệp vụ. |
 
 Tên lớp và vị trí tệp cần được đối chiếu với repository ở nhánh đang triển khai nếu cấu trúc mã nguồn thay đổi.
@@ -335,8 +335,8 @@ Các trường hợp cần được kiểm tra đối với phân hệ Doctor:
 
 ## 10. Các điểm cần hoàn thiện hoặc thống nhất
 
-1. **Swagger status endpoint:** mô tả API cần ghi rõ cả `CANCELLED` bên cạnh `CONFIRMED` và `COMPLETED`.
-2. **Kiểm thử hủy lịch:** cần có test trực tiếp xác minh bác sĩ hủy được lịch thuộc mình và không thể mở lại lịch đã hủy.
+1. **Swagger status endpoint:** đã ghi rõ `CANCELLED`, `CONFIRMED` và `COMPLETED`.
+2. **Kiểm thử hủy lịch:** đã có test bác sĩ hủy lịch thuộc mình và không thể mở lại lịch đã hủy.
 3. **Quyền sửa chuyên môn:** cần thống nhất liệu bác sĩ có được tự cập nhật `specialization` hay chỉ Admin được phép.
 4. **Hợp đồng response:** danh sách lịch hiện được mô tả là JSON array trực tiếp; không nên giả định response được bọc bằng `{ "data": [...] }` nếu code không định nghĩa wrapper đó.
 5. **Đồng bộ tài liệu với code:** mọi thay đổi về DTO, mã HTTP, trạng thái hoặc phân quyền nên được cập nhật đồng thời trong tài liệu và kiểm thử.
@@ -344,33 +344,3 @@ Các trường hợp cần được kiểm tra đối với phân hệ Doctor:
 ---
 
 **Kết luận:** Phân hệ Doctor là lớp API phía bác sĩ trong kiến trúc nhiều tầng của Dental Clinic Backend. Việc truy xuất dữ liệu được ràng buộc bởi tài khoản đã xác thực và quan hệ phân công lịch hẹn; nghiệp vụ lịch nằm chủ yếu trong `AppointmentService`, còn quản lý hồ sơ nằm trong `DoctorService`. Tài liệu này cần được cập nhật cùng các thay đổi mã nguồn để duy trì tính nhất quán giữa thiết kế và triển khai.
-
-## 11. Patch bổ sung và cách áp dụng
-
-Tệp `doctor-module-improvements.patch` là bản chênh lệch mã nguồn (unified diff), không phải file Java độc lập và không cần chạy trực tiếp bằng Java. Patch chỉ chứa các thay đổi sau:
-
-1. Cập nhật mô tả Swagger của `PATCH /api/doctor/appointments/{id}/status` để liệt kê trạng thái `CANCELLED`.
-2. Bổ sung test tích hợp cho trường hợp bác sĩ chỉ nhìn thấy lịch thuộc phạm vi của mình và trường hợp bác sĩ hủy lịch đã phân công nhưng không được mở lại lịch đã hủy.
-
-Patch **không tạo mới 5 API Doctor** và không thay thế các lớp Controller/Service/Repository hiện có. Đây là phần bổ sung nhỏ nhằm đồng bộ tài liệu Swagger và tăng độ bao phủ kiểm thử.
-
-### Vị trí đặt tệp
-
-Đặt `doctor-module-improvements.patch` tại thư mục gốc repository — cùng cấp với `pom.xml`, `mvnw.cmd` và thư mục `src`. Đường dẫn trong patch là đường dẫn tương đối từ thư mục gốc, ví dụ `src/main/java/com/dental/controller/DoctorController.java`.
-
-### Quy trình áp dụng trên Windows PowerShell
-
-```powershell
-git status
-git checkout -b chore/doctor-module-improvements
-git apply --check .\doctor-module-improvements.patch
-git apply .\doctor-module-improvements.patch
-git diff --check
-.\mvnw.cmd verify
-```
-
-`git apply --check` kiểm tra patch có khớp với mã nguồn hiện tại mà chưa thay đổi file; `git apply` mới thực sự áp dụng thay đổi; `git diff --check` kiểm tra lỗi whitespace; `mvnw verify` chạy các bước kiểm thử và xác minh build. Nên tạo nhánh riêng và kiểm tra `git status` trước khi áp dụng để tránh trộn với thay đổi đang làm.
-
-Nếu `git apply --check` báo lỗi, không nên ép áp dụng. Nguyên nhân thường là mã nguồn trên nhánh hiện tại đã khác ngữ cảnh mà patch được tạo ra; khi đó cần đối chiếu từng thay đổi thủ công hoặc tạo patch mới dựa trên phiên bản repository đang dùng.
-
-Patch đã được kiểm tra định dạng diff, nhưng chưa được áp dụng và chạy `verify` trên bản repository tại máy người phát triển trong quá trình tạo tài liệu này. Vì vậy, cần thực hiện các lệnh trên trong repository thực tế để xác nhận kết quả.

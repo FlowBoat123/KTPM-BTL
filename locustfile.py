@@ -1,46 +1,113 @@
-import uuid
-from locust import HttpUser, task, between
+"""SQLite baseline: customer/admin/doctor users with weights 7/2/1.
 
-class DentalClinicUser(HttpUser):
-    """
-    Kịch bản kiểm thử tải mô phỏng hành vi thực tế của người dùng:
-    - 60% lượt xem danh mục (phòng khám, dịch vụ, bác sĩ)
-    - 25% lượt xem khung giờ trống của bác sĩ
-    - 15% lượt đặt lịch hẹn và tra cứu lại lịch hẹn
-    """
+Weights select user classes and tasks, not percentages of HTTP requests.
+Use scripts/run_load_test.py to seed, preflight and collect reproducible results.
+"""
+import os
+import uuid
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+from locust import HttpUser, between, task
+from locust.exception import StopUser
+
+DATE = (datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")) + timedelta(days=7)).date().isoformat()
+SERVICE_ID = int(os.environ.get("LOAD_SERVICE_ID", "1"))
+DOCTOR_ID = int(os.environ.get("LOAD_DOCTOR_ID", "1"))
+
+
+def check_json(response, expected, predicate):
+    if response.status_code != expected:
+        response.failure(f"Expected HTTP {expected}, got {response.status_code}")
+        return None
+    try:
+        data = response.json()
+        if not predicate(data):
+            response.failure("Response does not match API contract")
+            return None
+        return data
+    except (ValueError, TypeError, KeyError):
+        response.failure("Invalid JSON response")
+        return None
+
+
+class CustomerUser(HttpUser):
+    weight = 7
     wait_time = between(1, 2.5)
 
     @task(6)
-    def view_catalog(self):
-        """Khách hàng xem thông tin phòng khám, danh mục dịch vụ và danh sách bác sĩ"""
-        self.client.get("/api/clinic", name="GET /api/clinic")
-        self.client.get("/api/services", name="GET /api/services")
-        self.client.get("/api/doctors", name="GET /api/doctors")
+    def catalog(self):
+        for endpoint in ("clinic", "services", "doctors"):
+            with self.client.get(f"/api/{endpoint}", catch_response=True) as response:
+                check_json(response, 200, lambda d: isinstance(d, (dict, list)) and bool(d))
 
     @task(3)
-    def check_available_slots(self):
-        """Khách hàng kiểm tra khung giờ trống của bác sĩ theo ngày và dịch vụ"""
-        self.client.get(
-            "/api/doctors/1/available-slots?date=2030-01-02&serviceId=2",
-            name="GET /api/doctors/1/available-slots"
-        )
+    def available_slots(self):
+        with self.client.get(
+            f"/api/doctors/{DOCTOR_ID}/available-slots?date={DATE}&serviceId={SERVICE_ID}",
+            name="/api/doctors/{id}/available-slots", catch_response=True,
+        ) as response:
+            check_json(response, 200, lambda d: isinstance(d.get("slots"), list))
 
     @task(1)
-    def book_and_lookup_appointment(self):
-        """Khách hàng đặt lịch hẹn mới và tra cứu lại bằng mã booking code"""
-        unique_id = uuid.uuid4().hex[:6]
+    def book_lookup_cancel(self):
         payload = {
-            "patientName": f"Patient_{unique_id}",
-            "phone": "0912345678",
-            "email": f"patient_{unique_id}@example.com",
-            "serviceId": 2,
-            "preferredDate": "2030-01-02",
-            "preferredTime": "09:00",
-            "note": "Load test appointment"
+            "patientName": "Synthetic " + uuid.uuid4().hex[:12], "phone": "0912345678",
+            "serviceId": SERVICE_ID, "preferredDate": DATE, "preferredTime": "09:00",
+            "note": "Synthetic load test data",
         }
-        res = self.client.post("/api/appointments", json=payload, name="POST /api/appointments")
-        if res.status_code == 201:
-            data = res.json()
-            code = data.get("code")
-            if code:
-                self.client.get(f"/api/appointments/{code}", name="GET /api/appointments/{code}")
+        with self.client.post("/api/appointments", json=payload, catch_response=True) as response:
+            data = check_json(response, 201, lambda d: d.get("status") == "PENDING" and bool(d.get("code")))
+        if data is None:
+            return
+        code = data["code"]
+        with self.client.get(f"/api/appointments/{code}", name="/api/appointments/{code}", catch_response=True) as response:
+            check_json(response, 200, lambda d: d.get("code") == code)
+        with self.client.delete(f"/api/appointments/{code}", name="/api/appointments/{code}", catch_response=True) as response:
+            check_json(response, 200, lambda d: d.get("status") == "CANCELLED")
+
+
+class AuthenticatedUser(HttpUser):
+    abstract = True
+    wait_time = between(1, 2.5)
+    username = ""
+    password = ""
+
+    def on_start(self):
+        with self.client.post("/api/auth/login", json={"username": self.username, "password": self.password}, catch_response=True) as response:
+            data = check_json(response, 200, lambda d: bool(d.get("accessToken")))
+        if data is None:
+            raise StopUser()
+        self.client.headers.update({"Authorization": "Bearer " + data["accessToken"]})
+
+
+class AdminUser(AuthenticatedUser):
+    weight = 2
+    username = "admin"
+    password = "Admin123!"  # Explicit demo/kaggle seed account; never a production credential.
+
+    @task
+    def appointments(self):
+        with self.client.get("/api/admin/appointments", catch_response=True) as response:
+            check_json(response, 200, lambda d: isinstance(d, list))
+
+    @task
+    def doctors(self):
+        with self.client.get("/api/admin/doctors", catch_response=True) as response:
+            check_json(response, 200, lambda d: isinstance(d, list) and bool(d))
+
+
+class DoctorUser(AuthenticatedUser):
+    weight = 1
+    username = "doctor1"
+    password = "Doctor123!"
+
+    @task
+    def appointments(self):
+        with self.client.get("/api/doctor/appointments", catch_response=True) as response:
+            check_json(response, 200, lambda d: isinstance(d, list))
+
+    @task
+    def profile(self):
+        with self.client.get("/api/doctor/profile", catch_response=True) as response:
+            check_json(response, 200, lambda d: bool(d.get("id")) and d.get("active") is True)

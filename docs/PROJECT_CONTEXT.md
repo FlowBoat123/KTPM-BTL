@@ -73,9 +73,9 @@ Theo yêu cầu từ bạn, dự án **chỉ tập trung hoàn thiện đầy đ
 | **1. Nghiệp vụ & API** | ✅ **Đã hoàn thành** | 26 endpoints RESTful chuẩn, giao tiếp JSON, đầy đủ GET/POST/DELETE/PUT/PATCH. |
 | **2. Phân tầng & Security** | ✅ **Đã hoàn thành** | API (Controller) → Service (không leak framework/DB) → Repository (Spring Data JPA / Hibernate). Spring Security JWT filter. |
 | **3. OpenAPI / Swagger UI** | ✅ **Đã hoàn thành** | Tích hợp SpringDoc OpenAPI 3 (`/v3/api-docs`), giao diện Swagger UI tương tác (`/swagger-ui/index.html`), hỗ trợ BearerAuth JWT. |
-| **4. Đóng gói Docker** | ✅ **Đã hoàn thành** | `Dockerfile` (multi-stage Temurin 17 JRE Alpine), `.dockerignore`, `docker-compose.yml` (PostgreSQL 16 Alpine + Backend). |
-| **5. Kịch bản test tải Kaggle CPU** | ✅ **Đã hoàn thành** | File kịch bản `locustfile.py`, tài liệu hướng dẫn chi tiết `docs/KAGGLE_LOAD_TEST.md`. |
-| **6. Cập nhật README.md** | ✅ **Đã hoàn thành** | Đầy đủ kiến trúc, đặc tả, Swagger, Docker, PostgreSQL và hướng dẫn chạy kiểm thử tải. |
+| **4. Đóng gói Docker** | ✅ **Đã hoàn thành** | `Dockerfile` (multi-stage Temurin 17 JRE Alpine), `.dockerignore`, `docker-compose.yml` (Backend + SQLite persistent volume). |
+| **5. Kiểm thử tải Kaggle CPU** | **Xem bằng chứng nghiệm thu** | Notebook, runner, CSV/HTML/metadata và kết quả thực thi được liên kết tại `docs/PHASE1_ACCEPTANCE.md`. |
+| **6. Cập nhật README.md** | ✅ **Đã hoàn thành** | Đầy đủ kiến trúc, đặc tả, Swagger, Docker SQLite và hướng dẫn chạy kiểm thử tải. |
 
 ---
 

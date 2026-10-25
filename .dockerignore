@@ -7,3 +7,9 @@ target/
 *.db
 *.log
 docs/
+reports/
+notebooks/
+__pycache__/
+.venv/
+.env
+.env.*

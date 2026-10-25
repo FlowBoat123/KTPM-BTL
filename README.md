@@ -269,24 +269,37 @@ java -jar target/dental-clinic-0.0.1-SNAPSHOT.jar
 
 Kiểm thử tích hợp dùng file SQLite tạm riêng, thời gian cố định; không sửa database chạy thử. Các ca kiểm tra bao gồm đặt lịch, phân công, chuyển trạng thái, quyền sở hữu lịch, trùng giờ/thời lượng, hủy lịch, quản lý bác sĩ, JWT, đăng xuất, khóa ngoại và trigger database. GitHub Actions chạy `verify` trên JDK 17.
 
-## Triển khai bằng Docker (PostgreSQL 16)
-
-Hệ thống hỗ trợ đóng gói container với Multi-stage build (JDK 17 $\rightarrow$ JRE 17 Alpine) và PostgreSQL 16:
+## Triển khai bằng Docker — SQLite
 
 ```bash
 docker compose up -d --build
 ```
 
-Lệnh trên sẽ tự động:
-1. Khởi động PostgreSQL 16 Alpine container kèm healthcheck.
-2. Build và chạy Backend Spring Boot, tự động kết nối PostgreSQL và seed dữ liệu mẫu.
-3. Truy cập Swagger UI tại: `http://localhost:8080/swagger-ui/index.html`.
+Compose chạy một backend với SQLite tại `/app/data/dental-clinic.db`, lưu trong named volume `sqlite-data`. Cổng mặc định chỉ công bố trên `127.0.0.1:8080`; có thể đặt `HOST_PORT` để đổi cổng. Profile `demo` tạo tài khoản mẫu. Đặt `JWT_SECRET` cố định qua biến môi trường nếu cần giữ token qua lần khởi động lại.
 
-## Kiểm thử tải trên Kaggle CPU (Load Testing)
+```bash
+docker compose down
+```
 
-Dự án cung cấp kịch bản kiểm thử tải bằng **Python Locust** ([locustfile.py](locustfile.py)):
-- Mô phỏng đồng thời 50 users duyệt catalog, kiểm tra khung giờ trống và đặt lịch khám.
-- Chi tiết hướng dẫn thực hiện và vẽ biểu đồ hiệu năng trên Kaggle Notebook CPU: xem [docs/KAGGLE_LOAD_TEST.md](docs/KAGGLE_LOAD_TEST.md).
+Lệnh trên giữ dữ liệu volume. Chỉ dùng `docker compose down --volumes` khi chủ động muốn xóa database demo.
+
+Kiểm tra build, API, phân quyền và dữ liệu còn sau restart bằng một Compose project thử nghiệm riêng:
+
+```bash
+python scripts/docker_smoke.py
+```
+
+Script tự dọn container/volume thử nghiệm; không dùng database local hoặc volume chạy thử thông thường. GitHub Actions cũng thực hiện kiểm tra này.
+
+## Kiểm thử tải Pha 1 — Kaggle CPU + SQLite
+
+Mở [notebooks/phase1_sqlite_kaggle.ipynb](notebooks/phase1_sqlite_kaggle.ipynb) trên Kaggle, chọn CPU/Internet On và Run All. Notebook chạy kiểm thử, đo Locust, tạo CSV/HTML/đồ thị và metadata commit/phần cứng. Xem [hướng dẫn](docs/KAGGLE_LOAD_TEST.md) và [bảng nghiệm thu](docs/PHASE1_ACCEPTANCE.md).
+
+SQLite là database cho cả local, Docker mặc định và baseline Kaggle. Profile `local` dùng SQLite nhưng chỉ bootstrap Admin do bạn cấu hình; profile `kaggle` dùng SQLite với tài khoản giả lập. PostgreSQL chỉ còn là adapter tùy chọn, không thuộc phép đo baseline này.
+
+## Ranh giới tầng nghiệp vụ
+
+Service phát sinh `BusinessException` với loại lỗi nghiệp vụ, không import HTTP/Servlet/JDBC/JPA/Hibernate hay Spring Data. `GlobalExceptionHandler` ánh xạ lỗi sang 400/401/403/404/409. `ArchitectureTest` bảo vệ ranh giới này; `LocalProfileTest` kiểm tra bootstrap Admin của SQLite local.
 
 ## Phạm vi phiên bản cơ bản
 

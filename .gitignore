@@ -8,3 +8,6 @@
 *.sqlite-*
 *.log
 .env
+/reports/
+__pycache__/
+.venv/
