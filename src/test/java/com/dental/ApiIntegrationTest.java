@@ -502,6 +502,10 @@ class ApiIntegrationTest {
     mvc.perform(get("/api/doctors/1/available-slots?date=2030-01-02&serviceId=9999"))
         .andExpect(status().isNotFound());
 
+    // 5b. Xem lịch trống với ngày ở quá khứ -> 400
+    mvc.perform(get("/api/doctors/1/available-slots?date=2029-12-31"))
+        .andExpect(status().isBadRequest());
+
     // 6. Đặt lịch với email sai định dạng -> 400
     var badEmail = booking(1, "09:00");
     badEmail.put("email", "not-a-valid-email");

@@ -126,7 +126,7 @@ Với dịch vụ mẫu số 2, thời lượng 60 phút, lịch trên kết th�
 | GET | `/api/services` | Dịch vụ đang hoạt động. |
 | GET | `/api/doctors` | Bác sĩ đang hoạt động. |
 | GET | `/api/doctors/{id}` | Chi tiết bác sĩ đang hoạt động. |
-| GET | `/api/doctors/{id}/available-slots?date=2030-01-02&serviceId=2` | Lịch trống theo ngày và thời lượng dịch vụ; bỏ `serviceId` thì mặc định 30 phút. |
+| GET | `/api/doctors/{id}/available-slots?date=2030-01-02&serviceId=2` | Lịch trống theo ngày và thời lượng dịch vụ (yêu cầu ngày hiện tại hoặc tương lai, trả về HTTP 400 nếu truyền ngày quá khứ); bỏ `serviceId` thì mặc định 30 phút. |
 | POST | `/api/appointments` | Tạo yêu cầu đặt lịch. |
 | GET | `/api/appointments/{code}` | Tra cứu bằng mã đặt lịch. |
 | DELETE | `/api/appointments/{code}` | Hủy lịch; trả về lịch với trạng thái `CANCELLED`. |
