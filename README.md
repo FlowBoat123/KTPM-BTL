@@ -1,7 +1,7 @@
 # Hệ thống đặt lịch phòng khám nha khoa
 
 Backend môn Kiến trúc phần mềm, Pha 1. **Java 17 · Spring Boot 3.5.16 · Spring Data JPA/Hibernate · Spring Security/JWT · SQLite.**
-Tài liệu tóm tắt phần trình bày 5–7 phút; [bản A4 3 trang](docs/README.pdf), [dàn ý 6 phút 30 giây](docs/MEET_GUIDE.md) và [hướng dẫn chi tiết](docs/USER_GUIDE.md).
+README là tài liệu chính của nhóm. Gợi ý trình bày Google Meet trong 6 phút 30 giây: bài toán/nghiệp vụ 1 phút 45 giây; tổ chức code 1 phút; framework/API 1 phút; kiểm thử 1 phút 30 giây; vấn đề và trao đổi 1 phút 15 giây.
 
 ## 1. Bài toán và phạm vi
 
@@ -55,7 +55,7 @@ API: http://localhost:8080; Swagger: http://localhost:8080/swagger-ui/index.html
 Tài khoản giả lập: `admin / Admin123!`, `doctor1 / Doctor123!`, `doctor2 / Doctor123!`.
 Docker lưu SQLite trong volume; `docker compose down` giữ dữ liệu.
 
-**Đặc tả trong GitHub:** [OpenAPI 3.1 JSON](docs/openapi.json) · [Preview Swagger UI](https://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FFlowBoat123%2FKTPM-BTL%2Fcodex%2Fphase1-sqlite-kaggle%2Fdocs%2Fopenapi.json) · [Ví dụ request](docs/api.http).
+**Đặc tả trong GitHub:** [OpenAPI 3.1 JSON](openapi.json) · [Preview Swagger UI](https://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FFlowBoat123%2FKTPM-BTL%2Fcodex%2Fphase1-sqlite-kaggle%2Fopenapi.json). JSON có ví dụ đăng nhập, đặt lịch, phân công và đổi trạng thái.
 Preview dùng để đọc đặc tả; thử request bằng Swagger local khi backend đang chạy.
 
 API gồm GET/POST/DELETE và PUT/PATCH: public 8, Auth 3, Doctor 5, Admin 10. Ví dụ GET `/api/admin/appointments` và POST `/api/admin/doctors` cần token ADMIN.
@@ -80,9 +80,11 @@ Khách đọc, đặt–tra cứu; 20% yêu cầu mới hủy ngay, còn lại c
 
 P95 nghĩa là khoảng 95% request có độ trễ không vượt giá trị đó. Mức lớn nhất vẫn không lỗi nhưng độ trễ tăng rõ. **2.906 request đặt lịch chỉ đi cùng 41 lần phân công** trong cửa sổ đo: một Admin là giới hạn xử lý nghiệp vụ của kịch bản, nên RPS không phải số ca khám hoàn tất.
 
-**Bằng chứng:** [notebook đã chạy, có output](notebooks/results/fixed_admin_kaggle_20261026.ipynb) · [CSV tổng hợp](docs/evidence/kaggle-fixed-admin-20261026/comparison.csv) · [metadata/CSV theo mức và ZIP gốc](docs/evidence/kaggle-fixed-admin-20261026) · [Kaggle v4](https://www.kaggle.com/code/flowboat/ktpm-phase-1-sqlite-cpu-baseline?scriptVersionId=362443343). Notebook Kaggle đang riêng tư; bản thực thi và kết quả được lưu trong GitHub để người chấm đọc được.
+**Bằng chứng:** [notebook đã chạy, có output](notebooks/results/fixed_admin_kaggle_20261026.ipynb) · [CSV tổng hợp](performance/kaggle-20261026/comparison.csv) · [ZIP gốc chứa metadata/CSV/log từng mức](performance/kaggle-20261026/results.zip) · [Kaggle v4](https://www.kaggle.com/code/flowboat/ktpm-phase-1-sqlite-cpu-baseline?scriptVersionId=362443343). Notebook Kaggle đang riêng tư; bản thực thi và kết quả được lưu trong GitHub để người chấm đọc được.
 
-[Quy trình tái lập](docs/KAGGLE_LOAD_TEST.md) · [Đối chiếu Pha 1](docs/PHASE1_ACCEPTANCE.md).
+**Chạy lại:** import [notebook mẫu](notebooks/phase1_sqlite_kaggle.ipynb) vào Kaggle, chọn Accelerator None, Internet On, rồi Save & Run All. Notebook ghi commit thực tế vào metadata và xuất notebook có output cùng ZIP. Muốn tái lập số trên, dùng notebook đã chạy cố định commit `298d97fcd96d0bb89c617bba782f47d2a4f23584`.
+
+Thử tại máy: `python -m pip install -r requirements-load.txt`, rồi `python scripts/run_load_test.py --environment local --customers 10 --doctors 3 --spawn-rate 10 --warmup 2 --duration 8 --output reports/local-smoke`. Kiểm tra Docker và giữ dữ liệu sau restart: `python scripts/docker_smoke.py` (dùng project/volume kiểm thử riêng).
 Kịch bản mới thay cả cơ cấu phiên, nghiệp vụ tạo tải và cách làm nóng; **không dùng số cũ 7/2/1 để kết luận tối ưu nhanh hơn**.
 
 ## 6. Vấn đề dễ thấy và hướng phát triển

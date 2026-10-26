@@ -6,7 +6,8 @@ target/
 .mvn/wrapper/maven-wrapper.jar.cache
 *.db
 *.log
-docs/
+performance/
+openapi.json
 reports/
 notebooks/
 __pycache__/

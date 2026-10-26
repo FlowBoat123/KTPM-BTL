@@ -7,7 +7,7 @@ from urllib.request import urlopen
 parser = argparse.ArgumentParser()
 parser.add_argument("--base-url", default="http://localhost:8080")
 parser.add_argument("--input", type=Path, help="Normalize a previously exported runtime snapshot")
-parser.add_argument("--output", type=Path, default=Path("docs/openapi.json"))
+parser.add_argument("--output", type=Path, default=Path("openapi.json"))
 args = parser.parse_args()
 if args.input:
     spec = json.loads(args.input.read_text(encoding="utf-8"))

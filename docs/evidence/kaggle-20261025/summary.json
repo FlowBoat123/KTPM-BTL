@@ -1,9 +1,0 @@
-{
-  "requests": 6511,
-  "failures": 0,
-  "failure_ratio": 0.0,
-  "rps": 54.56415753650067,
-  "mean_ms": 6.786477101213216,
-  "p95_ms": 16.0,
-  "target_met": true
-}
