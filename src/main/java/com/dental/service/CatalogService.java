@@ -2,7 +2,7 @@ package com.dental.service;
 
 import com.dental.dto.*;
 import com.dental.entity.*;
-import com.dental.exception.ApiException;
+import com.dental.exception.BusinessException;
 import com.dental.repository.*;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class CatalogService {
   public Clinic clinicEntity() {
     return clinics
         .findFirstByOrderByIdAsc()
-        .orElseThrow(() -> ApiException.notFound("Clinic not configured"));
+        .orElseThrow(() -> BusinessException.notFound("Clinic not configured"));
   }
 
   public Responses.ClinicView clinic() {
@@ -41,8 +41,9 @@ public class CatalogService {
   }
 
   public Doctor activeDoctor(Long id) {
-    Doctor d = doctors.findById(id).orElseThrow(() -> ApiException.notFound("Doctor not found"));
-    if (!d.getAccount().getActive()) throw ApiException.notFound("Doctor not found");
+    Doctor d =
+        doctors.findById(id).orElseThrow(() -> BusinessException.notFound("Doctor not found"));
+    if (!d.getAccount().getActive()) throw BusinessException.notFound("Doctor not found");
     return d;
   }
 
@@ -54,6 +55,6 @@ public class CatalogService {
     return services
         .findById(id)
         .filter(DentalService::getActive)
-        .orElseThrow(() -> ApiException.notFound("Service not found"));
+        .orElseThrow(() -> BusinessException.notFound("Service not found"));
   }
 }

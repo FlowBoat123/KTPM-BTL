@@ -12,10 +12,17 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-  @ExceptionHandler(ApiException.class)
-  public ResponseEntity<ApiError> api(ApiException e) {
-    return ResponseEntity.status(e.getStatus())
-        .body(ApiError.of(e.getStatus().value(), e.getMessage()));
+  @ExceptionHandler(BusinessException.class)
+  public ResponseEntity<ApiError> business(BusinessException e) {
+    HttpStatus status =
+        switch (e.getKind()) {
+          case NOT_FOUND -> HttpStatus.NOT_FOUND;
+          case CONFLICT -> HttpStatus.CONFLICT;
+          case INVALID_INPUT -> HttpStatus.BAD_REQUEST;
+          case UNAUTHENTICATED -> HttpStatus.UNAUTHORIZED;
+          case FORBIDDEN -> HttpStatus.FORBIDDEN;
+        };
+    return ResponseEntity.status(status).body(ApiError.of(status.value(), e.getMessage()));
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
