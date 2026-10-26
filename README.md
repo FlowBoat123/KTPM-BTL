@@ -1,7 +1,7 @@
 # Hệ thống đặt lịch phòng khám nha khoa
 
 Backend môn Kiến trúc phần mềm, Pha 1. **Java 17 · Spring Boot 3.5.16 · Spring Data JPA/Hibernate · Spring Security/JWT · SQLite.**
-Tài liệu tóm tắt phần trình bày 5–7 phút; [dàn ý 6 phút 30 giây](docs/MEET_GUIDE.md) và [hướng dẫn chi tiết](docs/USER_GUIDE.md) để riêng.
+Tài liệu tóm tắt phần trình bày 5–7 phút; [bản A4 3 trang](docs/README.pdf), [dàn ý 6 phút 30 giây](docs/MEET_GUIDE.md) và [hướng dẫn chi tiết](docs/USER_GUIDE.md).
 
 ## 1. Bài toán và phạm vi
 
@@ -56,7 +56,7 @@ Tài khoản giả lập: `admin / Admin123!`, `doctor1 / Doctor123!`, `doctor2 
 Docker lưu SQLite trong volume; `docker compose down` giữ dữ liệu.
 
 **Đặc tả trong GitHub:** [OpenAPI 3.1 JSON](docs/openapi.json) · [Preview Swagger UI](https://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FFlowBoat123%2FKTPM-BTL%2Fcodex%2Fphase1-sqlite-kaggle%2Fdocs%2Fopenapi.json) · [Ví dụ request](docs/api.http).
-Đọc preview không cần backend; gửi request thử cần backend đang chạy.
+Preview dùng để đọc đặc tả; thử request bằng Swagger local khi backend đang chạy.
 
 API gồm GET/POST/DELETE và PUT/PATCH: public 8, Auth 3, Doctor 5, Admin 10. Ví dụ GET `/api/admin/appointments` và POST `/api/admin/doctors` cần token ADMIN.
 Lỗi: 400 đầu vào sai, 401 chưa xác thực, 403 thiếu quyền, 404 không tìm thấy, 409 xung đột.
@@ -70,7 +70,17 @@ Xuất lại đặc tả từ ứng dụng đang chạy: `python scripts/export_
 
 Khách đọc, đặt–tra cứu; 20% yêu cầu mới hủy ngay, còn lại chờ xử lý. Admin đọc/phân công; bác sĩ đọc/xác nhận/hoàn thành. Tác vụ nghỉ 1–2,5 giây. Các phiên đăng nhập đầy đủ, làm nóng 15 giây, rồi reset thống kê và **giữ nguyên phiên** để đo 120 giây. Login/warm-up lưu riêng trong setup CSV.
 
-**Trạng thái lần chạy mới:** đang chuẩn bị bằng chứng Kaggle; chưa dùng số local thay số Kaggle. Bảng kết quả và notebook có output sẽ được cập nhật sau khi chạy.
+**Kaggle chạy thành công ngày 26/10/2026**, mã nguồn `298d97f`. Xeon 2,20 GHz, 4 CPU logic/quota 4 CPU, RAM giới hạn 30 GiB; JDK 17, heap 512 MiB, SQLite pool 1, journal `delete`. Mỗi mức chạy một lần; thời gian đo thực tế 120,05–120,24 giây, gồm chờ request cuối hoàn tất.
+
+| Khách / BS / Admin | Request | RPS | TB (ms) | P95 (ms) | Lỗi |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 100 / 5 / 1 | 16.280 | 135,61 | 6,53 | 22 | 0% |
+| 200 / 10 / 1 | 32.477 | 270,50 | 10,26 | 32 | 0% |
+| 500 / 20 / 1 | 68.116 | 566,49 | 147,20 | 310 | 0% |
+
+P95 nghĩa là khoảng 95% request có độ trễ không vượt giá trị đó. Mức lớn nhất vẫn không lỗi nhưng độ trễ tăng rõ. **2.906 request đặt lịch chỉ đi cùng 41 lần phân công** trong cửa sổ đo: một Admin là giới hạn xử lý nghiệp vụ của kịch bản, nên RPS không phải số ca khám hoàn tất.
+
+**Bằng chứng:** [notebook đã chạy, có output](notebooks/results/fixed_admin_kaggle_20261026.ipynb) · [CSV tổng hợp](docs/evidence/kaggle-fixed-admin-20261026/comparison.csv) · [metadata/CSV theo mức và ZIP gốc](docs/evidence/kaggle-fixed-admin-20261026) · [Kaggle v4](https://www.kaggle.com/code/flowboat/ktpm-phase-1-sqlite-cpu-baseline?scriptVersionId=362443343). Notebook Kaggle đang riêng tư; bản thực thi và kết quả được lưu trong GitHub để người chấm đọc được.
 
 [Quy trình tái lập](docs/KAGGLE_LOAD_TEST.md) · [Đối chiếu Pha 1](docs/PHASE1_ACCEPTANCE.md).
 Kịch bản mới thay cả cơ cấu phiên, nghiệp vụ tạo tải và cách làm nóng; **không dùng số cũ 7/2/1 để kết luận tối ưu nhanh hơn**.
@@ -81,4 +91,4 @@ Pool một kết nối SQLite, danh sách chưa phân trang và kiểm tra phiê
 
 RPS/P95 chỉ áp dụng cho workload đã ghi; Locust và backend chia sẻ Kaggle CPU, chưa xác định tải tối đa hay số người dùng/ngày. Pha 2 cần đo CPU/thời gian chờ/truy vấn, rồi thử cải tiến và đo lặp trên cùng phần cứng, dữ liệu và kịch bản.
 
-**Nguồn:** [Yêu cầu môn học](https://github.com/maytinhdibo/KTPM-architecture-solution/blob/main/2026.md) · [Báo cáo đầy đủ](https://docs.google.com/document/d/1ccs7ITYj_TdFpNJUcTsn6Juie07U2mtpBiy--WwlAJk).
+**Nguồn:** [Yêu cầu môn học](https://github.com/maytinhdibo/KTPM-architecture-solution/blob/main/2026.md) · [Báo cáo trước khi đổi kịch bản tải](https://docs.google.com/document/d/1ccs7ITYj_TdFpNJUcTsn6Juie07U2mtpBiy--WwlAJk).

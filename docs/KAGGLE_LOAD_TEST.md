@@ -36,4 +36,10 @@ Nguồn mặc định là nhánh codex/phase1-sqlite-kaggle; commit thực tế 
 
 Mỗi output phải là thư mục mới. Backend dùng SQLite pool 1, journal delete, heap 512 MiB. Không có tối ưu DB cho Pha 2. Backend và Locust chia sẻ máy; đọc CPU/RAM/quota thực tế trong metadata.json, không suy ra tải tối đa hoặc số người dùng/ngày. Một lần mỗi mức chưa cho biết độ dao động giữa các lần lặp.
 
-Kết quả cũ 7/2/1 trong evidence/kaggle-20261025 là lịch sử của workload khác, không dùng làm so sánh trước/sau tối ưu. Kết quả mới, notebook đã chạy và metadata được liên kết từ README sau khi hoàn tất.
+## Bằng chứng ngày 26/10/2026
+
+[Kaggle v4](https://www.kaggle.com/code/flowboat/ktpm-phase-1-sqlite-cpu-baseline?scriptVersionId=362443343) đã chạy thành công, nguồn `298d97fcd96d0bb89c617bba782f47d2a4f23584`. [Notebook đã thực thi](../notebooks/results/fixed_admin_kaggle_20261026.ipynb) giữ 4 cell code có execution_count và output; [gói bằng chứng](evidence/kaggle-fixed-admin-20261026) giữ ZIP gốc, bảng tổng hợp, metadata, phases và CSV từng mức. Bản trên Kaggle riêng tư; dùng bản GitHub khi chia sẻ cho giảng viên.
+
+Cả ba mức không lỗi: 135,61 / 270,50 / 566,49 RPS; P95 22 / 32 / 310 ms. Mỗi CSV history có 120 mẫu giữ đúng cơ cấu phiên. Login lần lượt 6/11/21 chỉ thuộc setup. Build trên Kaggle đạt 19 test. Xem [README](../README.md) để đọc bảng đầy đủ và giới hạn phép đo.
+
+Kết quả cũ 7/2/1 trong evidence/kaggle-20261025 là lịch sử của workload khác, không dùng làm so sánh trước/sau tối ưu.
