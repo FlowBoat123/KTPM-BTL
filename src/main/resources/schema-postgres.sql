@@ -67,6 +67,8 @@ CREATE OR REPLACE FUNCTION check_appointment_overlap()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.status IN ('ASSIGNED', 'CONFIRMED', 'COMPLETED') THEN
+    -- Serialize overlap checks for the same doctor across concurrent transactions.
+    PERFORM pg_advisory_xact_lock(NEW.doctor_id);
     IF EXISTS (
       SELECT 1 FROM appointments a
       WHERE (TG_OP = 'INSERT' OR a.id <> NEW.id)
@@ -75,7 +77,7 @@ BEGIN
         AND a.status IN ('ASSIGNED', 'CONFIRMED', 'COMPLETED')
         AND a.start_time < NEW.end_time AND a.end_time > NEW.start_time
     ) THEN
-      RAISE EXCEPTION 'doctor_schedule_overlap';
+      RAISE EXCEPTION 'doctor_schedule_overlap' USING ERRCODE = '23P01';
     END IF;
   END IF;
   RETURN NEW;

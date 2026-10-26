@@ -2,13 +2,12 @@ package com.dental.service;
 
 import com.dental.dto.*;
 import com.dental.entity.*;
-import com.dental.exception.ApiException;
+import com.dental.exception.BusinessException;
 import com.dental.repository.*;
 import com.dental.security.*;
 import java.time.*;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Service;
@@ -43,13 +42,13 @@ public class AuthService {
   @Transactional
   public Responses.Login login(Requests.Login request) {
     if (request.password().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72)
-      throw ApiException.invalid("Password must not exceed 72 UTF-8 bytes");
+      throw BusinessException.invalid("Password must not exceed 72 UTF-8 bytes");
     Account account = accounts.findByUsername(request.username()).orElse(null);
     boolean matched =
         passwords.matches(
             request.password(), account == null ? dummyHash : account.getPasswordHash());
     if (account == null || !matched || !account.getActive())
-      throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+      throw BusinessException.unauthenticated("Invalid username or password");
     Instant now = clock.instant();
     Instant expiry = now.plusSeconds(ttl * 60);
     String id = UUID.randomUUID().toString();

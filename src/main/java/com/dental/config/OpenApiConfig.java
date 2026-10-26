@@ -4,7 +4,6 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +20,6 @@ public class OpenApiConfig {
                 .description("Hệ thống backend đặt lịch khám nha khoa - Đồ án KTPM-BTL 2026")
                 .version("1.0.0")
                 .contact(new Contact().name("Dental Clinic Team")))
-        .addSecurityItem(new SecurityRequirement().addList("BearerAuth"))
         .components(
             new Components()
                 .addSecuritySchemes(
