@@ -55,7 +55,7 @@ API: http://localhost:8080; Swagger: http://localhost:8080/swagger-ui/index.html
 Tài khoản giả lập: `admin / Admin123!`, `doctor1 / Doctor123!`, `doctor2 / Doctor123!`.
 Docker lưu SQLite trong volume; `docker compose down` giữ dữ liệu.
 
-**Đặc tả trong GitHub:** [OpenAPI 3.1 JSON](openapi.json) · [Preview Swagger UI](https://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FFlowBoat123%2FKTPM-BTL%2Fcodex%2Fphase1-sqlite-kaggle%2Fopenapi.json). JSON có ví dụ đăng nhập, đặt lịch, phân công và đổi trạng thái.
+**Đặc tả trong GitHub:** [OpenAPI 3.1 JSON](openapi.json) · [Preview Swagger UI](https://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FFlowBoat123%2FKTPM-BTL%2FKiem-thu-hieu-nang-kaggle%2Fopenapi.json). JSON có ví dụ đăng nhập, đặt lịch, phân công và đổi trạng thái.
 Preview dùng để đọc đặc tả; thử request bằng Swagger local khi backend đang chạy.
 
 API gồm GET/POST/DELETE và PUT/PATCH: public 8, Auth 3, Doctor 5, Admin 10. Ví dụ GET `/api/admin/appointments` và POST `/api/admin/doctors` cần token ADMIN.
