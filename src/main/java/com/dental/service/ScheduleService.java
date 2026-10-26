@@ -48,6 +48,9 @@ public class ScheduleService {
 
   @Transactional(readOnly = true)
   public Responses.AvailableSlots available(Long doctor, LocalDate date, Long serviceId) {
+    if (date.isBefore(LocalDate.now(clock))) {
+      throw ApiException.invalid("Date must not be in the past");
+    }
     catalog.activeDoctor(doctor);
     int duration = serviceId == null ? 30 : catalog.activeService(serviceId).getDurationMinutes();
     Clinic clinic = catalog.clinicEntity();
