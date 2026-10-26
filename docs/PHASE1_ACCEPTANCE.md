@@ -54,4 +54,6 @@ Kịch bản tải mô phỏng Customer/Admin/Doctor và có preflight các lu�
 
 ## Yêu cầu trình bày mới
 
-README được rút gọn, đặc tả 26 API lưu tại openapi.json và có link preview. Dàn ý Google Meet trong MEET_GUIDE.md. Bộ đo mới giữ một Admin, tạo tài khoản bác sĩ riêng và đo sau login/warm-up; xem KAGGLE_LOAD_TEST.md. Kết quả mới được cập nhật vào README sau khi Kaggle thực thi.
+README được rút gọn và có [bản A4 3 trang](README.pdf), [đặc tả 26 API](openapi.json) có link preview, [dàn ý Google Meet 6 phút 30 giây](MEET_GUIDE.md).
+
+Bộ đo mới giữ một Admin, tạo tài khoản bác sĩ riêng và đo sau login/warm-up; xem [quy trình](KAGGLE_LOAD_TEST.md). Kaggle v4 ngày 26/10/2026 đã chạy nguồn `298d97fcd96d0bb89c617bba782f47d2a4f23584`: 19 test đạt; 106/211/521 phiên không lỗi, RPS 135,61/270,50/566,49 và P95 22/32/310 ms. [Notebook có output](../notebooks/results/fixed_admin_kaggle_20261026.ipynb), [CSV/metadata/ZIP](evidence/kaggle-fixed-admin-20261026) và bảng trong [README](../README.md) là bằng chứng hiện tại. Các số 50 users ở trên là lịch sử, không phải workload nộp lần này.

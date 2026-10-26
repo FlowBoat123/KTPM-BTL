@@ -1,0 +1,47 @@
+[
+  {
+    "customers": 100,
+    "doctors": 5,
+    "admins": 1,
+    "total_users": 106,
+    "exit_code": 0,
+    "requests": 16280,
+    "failures": 0,
+    "failure_ratio": 0.0,
+    "rps": 135.60711831627262,
+    "mean_ms": 6.5275763218057525,
+    "p95_ms": 22.0,
+    "target_met": true,
+    "measurement_elapsed_seconds": 120.05269488900001
+  },
+  {
+    "customers": 200,
+    "doctors": 10,
+    "admins": 1,
+    "total_users": 211,
+    "exit_code": 0,
+    "requests": 32477,
+    "failures": 0,
+    "failure_ratio": 0.0,
+    "rps": 270.5010202833227,
+    "mean_ms": 10.261860780706572,
+    "p95_ms": 32.0,
+    "target_met": true,
+    "measurement_elapsed_seconds": 120.062393724
+  },
+  {
+    "customers": 500,
+    "doctors": 20,
+    "admins": 1,
+    "total_users": 521,
+    "exit_code": 0,
+    "requests": 68116,
+    "failures": 0,
+    "failure_ratio": 0.0,
+    "rps": 566.486534099108,
+    "mean_ms": 147.19599671268173,
+    "p95_ms": 310.0,
+    "target_met": true,
+    "measurement_elapsed_seconds": 120.24292882500004
+  }
+]

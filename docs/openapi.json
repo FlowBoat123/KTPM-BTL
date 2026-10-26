@@ -1,6 +1,34 @@
 {
   "components": {
     "schemas": {
+      "ApiError": {
+        "properties": {
+          "errors": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "status",
+          "message",
+          "errors"
+        ],
+        "type": "object"
+      },
       "AppointmentView": {
         "properties": {
           "appointmentDate": {
@@ -408,7 +436,8 @@
     },
     "description": "Hệ thống backend đặt lịch khám nha khoa - Đồ án KTPM-BTL 2026",
     "title": "Dental Clinic Management API",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "x-export-note": "Generated from /v3/api-docs; error schemas corrected to the shared ApiError response."
   },
   "openapi": "3.1.0",
   "paths": {
@@ -419,7 +448,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/AppointmentView"
@@ -432,12 +461,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AppointmentView"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -445,12 +471,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AppointmentView"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -486,7 +509,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppointmentView"
                 }
@@ -496,9 +519,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -506,9 +529,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -516,9 +539,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -554,6 +577,11 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "appointmentDate": "2030-01-02",
+                "doctorId": 1,
+                "startTime": "09:00"
+              },
               "schema": {
                 "$ref": "#/components/schemas/Assignment"
               }
@@ -564,7 +592,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppointmentView"
                 }
@@ -574,9 +602,9 @@
           },
           "400": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -584,9 +612,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -594,9 +622,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -604,9 +632,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -614,9 +642,9 @@
           },
           "409": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -652,6 +680,9 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "status": "CANCELLED"
+              },
               "schema": {
                 "$ref": "#/components/schemas/StatusChange"
               }
@@ -662,7 +693,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppointmentView"
                 }
@@ -672,9 +703,9 @@
           },
           "400": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -682,9 +713,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -692,9 +723,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -702,9 +733,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -712,9 +743,9 @@
           },
           "409": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -739,7 +770,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/DoctorView"
@@ -752,12 +783,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/DoctorView"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -765,12 +793,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/DoctorView"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -803,7 +828,7 @@
         "responses": {
           "201": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DoctorView"
                 }
@@ -813,9 +838,9 @@
           },
           "400": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -823,9 +848,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -833,9 +858,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -843,9 +868,9 @@
           },
           "409": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -883,15 +908,43 @@
             "description": "Vô hiệu hóa bác sĩ thành công"
           },
           "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
             "description": "Chưa đăng nhập / Token không hợp lệ"
           },
           "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
             "description": "Không có quyền Admin"
           },
           "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
             "description": "Bác sĩ không tồn tại"
           },
           "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
             "description": "Bác sĩ vẫn còn lịch hẹn đang mở (ASSIGNED hoặc CONFIRMED)"
           }
         },
@@ -922,7 +975,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DoctorView"
                 }
@@ -932,9 +985,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -942,9 +995,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -952,9 +1005,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -998,7 +1051,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DoctorView"
                 }
@@ -1008,9 +1061,9 @@
           },
           "400": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1018,9 +1071,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1028,9 +1081,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1038,9 +1091,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1076,7 +1129,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/AppointmentView"
@@ -1089,12 +1142,9 @@
           },
           "401": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AppointmentView"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1102,12 +1152,9 @@
           },
           "403": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AppointmentView"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1115,12 +1162,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AppointmentView"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1145,6 +1189,14 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "note": "Synthetic example",
+                "patientName": "Nguyen Van A",
+                "phone": "0912345678",
+                "preferredDate": "2030-01-02",
+                "preferredTime": "09:00",
+                "serviceId": 2
+              },
               "schema": {
                 "$ref": "#/components/schemas/Booking"
               }
@@ -1155,7 +1207,7 @@
         "responses": {
           "201": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppointmentView"
                 }
@@ -1165,9 +1217,9 @@
           },
           "400": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1175,9 +1227,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1207,7 +1259,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppointmentView"
                 }
@@ -1217,9 +1269,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1227,9 +1279,9 @@
           },
           "409": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1257,7 +1309,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppointmentView"
                 }
@@ -1267,9 +1319,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppointmentView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1289,6 +1341,10 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "password": "Admin123!",
+                "username": "admin"
+              },
               "schema": {
                 "$ref": "#/components/schemas/Login"
               }
@@ -1299,13 +1355,23 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Login"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid username or password"
           }
         },
         "summary": "Đăng nhập",
@@ -1321,6 +1387,16 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
           }
         },
         "security": [
@@ -1341,13 +1417,23 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/User"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
           }
         },
         "security": [
@@ -1368,7 +1454,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClinicView"
                 }
@@ -1378,9 +1464,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClinicView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1400,7 +1486,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/AppointmentView"
@@ -1410,6 +1496,26 @@
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
           }
         },
         "security": [
@@ -1441,13 +1547,33 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppointmentView"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
           }
         },
         "security": [
@@ -1479,6 +1605,9 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "status": "CONFIRMED"
+              },
               "schema": {
                 "$ref": "#/components/schemas/StatusChange"
               }
@@ -1489,13 +1618,33 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppointmentView"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
           }
         },
         "security": [
@@ -1516,13 +1665,33 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DoctorView"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
           }
         },
         "security": [
@@ -1551,13 +1720,33 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DoctorView"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
           }
         },
         "security": [
@@ -1578,7 +1767,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/DoctorView"
@@ -1614,7 +1803,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DoctorView"
                 }
@@ -1624,9 +1813,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DoctorView"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1675,7 +1864,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AvailableSlots"
                 }
@@ -1685,9 +1874,9 @@
           },
           "400": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AvailableSlots"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1695,9 +1884,9 @@
           },
           "404": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AvailableSlots"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             },
@@ -1717,7 +1906,7 @@
         "responses": {
           "200": {
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/ServiceView"

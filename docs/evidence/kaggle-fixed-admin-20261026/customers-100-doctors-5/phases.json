@@ -1,0 +1,23 @@
+{
+  "expected_counts": {
+    "AdminUser": 1,
+    "DoctorUser": 5,
+    "CustomerUser": 100
+  },
+  "stage": "completed",
+  "ready_counts": {
+    "AdminUser": 1,
+    "DoctorUser": 5,
+    "CustomerUser": 100
+  },
+  "setup_requests": 2225,
+  "setup_failures": 0,
+  "measurement_start": "2026-10-26T10:06:00.360486+00:00",
+  "observed_counts_at_end": {
+    "AdminUser": 1,
+    "DoctorUser": 5,
+    "CustomerUser": 100
+  },
+  "measurement_end": "2026-10-26T10:08:00.413228+00:00",
+  "measurement_elapsed_seconds": 120.05269488900001
+}
