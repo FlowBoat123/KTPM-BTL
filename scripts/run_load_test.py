@@ -89,11 +89,33 @@ def preflight(base):
 
 def run_locust(base, destination, users, rate, seconds, env):
     destination.mkdir(parents=True, exist_ok=True)
-    args = [sys.executable, "-m", "locust", "-f", str(ROOT / "locustfile.py"), "--host", base, "--headless", "--users", str(users), "--spawn-rate", str(rate), "--run-time", f"{seconds}s", "--stop-timeout", "15", "--csv", str(destination / "locust"), "--csv-full-history", "--html", str(destination / "report.html"), "--only-summary", "--exit-code-on-error", "0"]
+    args = [sys.executable, str(ROOT / "scripts/locust_driver.py"), "--host", base, "--output", str(destination), "--spawn-rate", str(rate), "--duration", str(seconds), "--warmup", env["LOAD_WARMUP"]]
     with (destination / "locust.log").open("w", encoding="utf-8") as log:
-        result = command(args, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=seconds + 120)
+        result = command(args, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=seconds + int(env["LOAD_WARMUP"]) + 180)
     if result.returncode:
         raise RuntimeError(f"Locust exited with {result.returncode}; see {destination / 'locust.log'}")
+
+
+def seed_doctors(base, count, service):
+    """Each simulated doctor uses a distinct real account and starts with an assigned case."""
+    admin = request(base, "POST", "/api/auth/login", {"username": "admin", "password": "Admin123!"})["accessToken"]
+    doctors = request(base, "GET", "/api/doctors")
+    for number in range(3, count + 1):
+        doctors.append(request(base, "POST", "/api/admin/doctors", {
+            "username": f"doctor{number}", "password": "Doctor123!",
+            "fullName": f"Synthetic Doctor {number}", "specialization": "Synthetic dentistry",
+        }, admin, expected=201))
+    day = (datetime.now(timezone(timedelta(hours=7))) + timedelta(days=7)).date().isoformat()
+    for doctor in doctors[:count]:
+        booked = request(base, "POST", "/api/appointments", {
+            "patientName": "Seed Synthetic", "phone": "0912345678", "serviceId": service,
+            "preferredDate": day, "preferredTime": "10:00",
+        }, expected=201)
+        request(base, "PATCH", f"/api/admin/appointments/{booked['id']}/assign", {
+            "doctorId": doctor["id"], "appointmentDate": day, "startTime": "10:00",
+        }, admin)
+    request(base, "POST", "/api/auth/logout", token=admin, expected=204)
+    return [d["id"] for d in doctors[:count]]
 
 
 def summarize(destination, metadata):
@@ -105,6 +127,11 @@ def summarize(destination, metadata):
         raise RuntimeError("No requests recorded; this is not a valid benchmark")
     summary = {"requests": count, "failures": failures, "failure_ratio": failures / count, "rps": float(total["Requests/s"]), "mean_ms": float(total["Average Response Time"]), "p95_ms": float(total["95%"])}
     summary["target_met"] = summary["failure_ratio"] <= metadata["max_failure_ratio"]
+    phases = json.loads((destination / "phases.json").read_text())
+    if phases["stage"] != "completed" or phases["observed_counts_at_end"] != metadata["population"]:
+        raise RuntimeError("Incomplete run or population mismatch")
+    summary["measurement_elapsed_seconds"] = phases["measurement_elapsed_seconds"]
+    summary["rps"] = count / phases["measurement_elapsed_seconds"]
     write_json(destination / "summary.json", summary)
     import matplotlib
     matplotlib.use("Agg")
@@ -120,14 +147,15 @@ def summarize(destination, metadata):
     plt.close(fig)
     lines = ["# SQLite performance baseline", "", f"Environment: **{metadata['environment']}**", f"Source commit: `{metadata['commit']}`", f"Users: {metadata['users']}; measurement: {metadata['duration_seconds']}s; warm-up: {metadata['warmup_seconds']}s.", "", "| Metric | Value |", "| --- | --- |"]
     lines += [f"| {key} | {value} |" for key, value in summary.items()]
-    lines += ["", "Load generator and backend share the same host. JVM heap is fixed at 512 MiB. SQLite uses one application connection and its default journal mode; no Phase 2 tuning is applied.", "", "Task/user weights do not equal proportions of HTTP requests. This workload includes public reads and booking/lookup/cancellation writes plus authenticated Admin/Doctor reads. Assignment and ownership rules are checked before measurement, not benchmarked concurrently.", "", "The failure target is a project choice, not a threshold required by the assignment. A local smoke test is not Kaggle evidence."]
+    lines += ["", f"Population: {metadata['population']}. All sessions finish login/spawning and warm-up before statistics reset; the same sessions continue for the measurement. See setup_stats.csv for login/startup metrics and phases.json for exact timing.", "", "Customers read/book/look up and cancel 20% of new bookings. One admin reads and assigns pending requests; distinct doctors read/confirm/complete their own cases. Think time is 1–2.5 seconds per task. A single admin can become a business bottleneck; this is not an unlimited assignment worker test.", "", "Backend and Locust share Kaggle CPU. SQLite pool=1, JVM heap=512 MiB. No database/JAR/token is bundled. The error threshold is a project choice. Historical weighted-user results are a different workload and are not an optimization comparison."]
     (destination / "REPORT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return summary
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--users", type=int, default=50)
+    parser.add_argument("--customers", type=int, default=100)
+    parser.add_argument("--doctors", type=int, default=5)
     parser.add_argument("--spawn-rate", type=int, default=5)
     parser.add_argument("--duration", type=int, default=120)
     parser.add_argument("--warmup", type=int, default=15)
@@ -135,7 +163,8 @@ def main():
     parser.add_argument("--environment", choices=["local", "kaggle"], default="local")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if min(args.users, args.spawn_rate, args.duration) < 1 or args.warmup < 0 or not 0 <= args.max_failure_ratio <= 1:
+    args.users = 1 + args.customers + args.doctors
+    if min(args.customers, args.spawn_rate, args.duration) < 1 or args.doctors < 2 or args.warmup < 0 or not 0 <= args.max_failure_ratio <= 1:
         parser.error("Invalid load settings")
     if args.environment == "kaggle" and not Path("/kaggle/working").is_dir():
         parser.error("Kaggle evidence must actually be generated in /kaggle/working")
@@ -150,6 +179,8 @@ def main():
     with zipfile.ZipFile(jar) as archive:
         jdbc = next(name for name in archive.namelist() if name.startswith("BOOT-INF/lib/sqlite-jdbc-"))
     metadata = {"environment": args.environment, "utc_started": datetime.now(timezone.utc).isoformat(), "commit": output_of(["git", "rev-parse", "HEAD"]), "working_tree": output_of(["git", "status", "--porcelain"]), "platform": platform.platform(), "cpu_model": platform.processor(), "logical_cpus": os.cpu_count(), "database": "SQLite", "sqlite_jdbc": Path(jdbc).name, "connection_pool_size": 1, "jvm_heap_mib": 512, "java": output_of(["java", "-version"]), "python": sys.version, "locust": importlib.metadata.version("locust"), "matplotlib": importlib.metadata.version("matplotlib"), "users": args.users, "spawn_rate": args.spawn_rate, "duration_seconds": args.duration, "warmup_seconds": args.warmup, "max_failure_ratio": args.max_failure_ratio, "same_host_load_generator": True, "status": "starting"}
+    metadata.update(population={"AdminUser": 1, "DoctorUser": args.doctors, "CustomerUser": args.customers},
+                    scenario="fixed-admin-distinct-doctors-v2", measurement="steady sessions after login and warm-up")
     for name, path in {"cpuinfo": "/proc/cpuinfo", "meminfo": "/proc/meminfo", "cgroup_cpu_max": "/sys/fs/cgroup/cpu.max", "cgroup_memory_max": "/sys/fs/cgroup/memory.max"}.items():
         if Path(path).is_file():
             metadata[name] = Path(path).read_text()[:16000]
@@ -174,9 +205,12 @@ def main():
                     time.sleep(.5)
             service, doctor, checks = preflight(base)
             write_json(destination / "preflight.json", checks)
-            env.update(LOAD_SERVICE_ID=str(service), LOAD_DOCTOR_ID=str(doctor))
-            if args.warmup:
-                run_locust(base, destination / "warmup", args.users, args.spawn_rate, args.warmup, env)
+            doctor_ids = seed_doctors(base, args.doctors, service)
+            spec = request(base, "GET", "/v3/api-docs")
+            spec["servers"] = [{"url": "http://localhost:8080", "description": "Local / Docker"}]
+            write_json(destination / "openapi.json", spec)
+            env.update(LOAD_SERVICE_ID=str(service), LOAD_DOCTOR_IDS=json.dumps(doctor_ids),
+                       LOAD_CUSTOMERS=str(args.customers), LOAD_DOCTORS=str(args.doctors), LOAD_WARMUP=str(args.warmup))
             metadata["status"] = "measuring"
             write_json(destination / "metadata.json", metadata)
             run_locust(base, destination, args.users, args.spawn_rate, args.duration, env)

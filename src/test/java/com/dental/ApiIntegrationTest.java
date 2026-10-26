@@ -572,6 +572,11 @@ class ApiIntegrationTest {
         .andExpect(jsonPath("$.openapi").exists())
         .andExpect(jsonPath("$.info.title").value("Dental Clinic Management API"))
         .andExpect(jsonPath("$.paths['/api/admin/appointments']").exists())
+        .andExpect(jsonPath("$.security").doesNotExist())
+        .andExpect(jsonPath("$.paths['/api/appointments'].post.security").doesNotExist())
+        .andExpect(jsonPath("$.paths['/api/auth/login'].post.security").doesNotExist())
+        .andExpect(jsonPath("$.paths['/api/admin/appointments'].get.security[0].BearerAuth").isArray())
+        .andExpect(jsonPath("$.paths['/api/doctor/profile'].get.security[0].BearerAuth").isArray())
         .andExpect(jsonPath("$.components.securitySchemes.BearerAuth").exists());
 
     mvc.perform(get("/swagger-ui/index.html"))

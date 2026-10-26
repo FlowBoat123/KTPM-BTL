@@ -15,11 +15,11 @@ Nguồn yêu cầu: [2026.md](https://github.com/maytinhdibo/KTPM-architecture-s
 
 ## Kiểm tra mã nguồn và Docker
 
-- `mvnw verify`: 18 test, không có lỗi hoặc bỏ qua (16 API, 1 kiến trúc, 1 profile local).
+- `mvnw verify`: 19 test, không có lỗi hoặc bỏ qua (17 API, 1 kiến trúc, 1 profile local).
 - Bài đo baseline chọn SQLite, pool 1, Java heap 512 MiB. PostgreSQL không phải yêu cầu bắt buộc và không dùng để so sánh baseline Pha 1 này.
 - Docker build và smoke test đã đạt ngày 25/10/2026: đặt lịch → phân công → hoàn thành, quyền 401/403, trùng lịch 409, ghi chú dài và dữ liệu còn sau restart. CI chạy lại kiểm tra Docker và lưu artifact theo từng commit.
 
-## Bằng chứng Kaggle
+## Bằng chứng Kaggle lịch sử (trọng số 7/2/1)
 
 Đã chạy trên Kaggle CPU ngày **25/10/2026**, phiên bản notebook **1**, mã nguồn sạch ở commit `8e7b4476e12257292475b1d0aa19ba26ae103ae8`.
 
@@ -51,3 +51,7 @@ Preflight đã đạt: tạo lịch và ghi chú dài, phân công/hoàn thành,
 ## Giới hạn
 
 Kịch bản tải mô phỏng Customer/Admin/Doctor và có preflight các luồng chính. Không tuyên bố đã đo mọi API hoặc phân công đồng thời ở tải lớn. Backend và load generator cùng dùng tài nguyên máy Kaggle. Ngưỡng lỗi ≤1% là chỉ tiêu nhóm tự chọn; đề bài không ấn định số users, RPS hay độ trễ.
+
+## Yêu cầu trình bày mới
+
+README được rút gọn, đặc tả 26 API lưu tại openapi.json và có link preview. Dàn ý Google Meet trong MEET_GUIDE.md. Bộ đo mới giữ một Admin, tạo tài khoản bác sĩ riêng và đo sau login/warm-up; xem KAGGLE_LOAD_TEST.md. Kết quả mới được cập nhật vào README sau khi Kaggle thực thi.

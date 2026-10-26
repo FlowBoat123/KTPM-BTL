@@ -1,37 +1,39 @@
-# Kiểm thử Pha 1 — SQLite trên Kaggle CPU
+# Kaggle CPU / SQLite: một Admin cố định
 
-Database baseline: **SQLite**. Không bật profile `postgres` cho bài đo này. Chọn CPU (Accelerator None), Internet On.
+## Kịch bản nộp bài
 
-## Chạy notebook
+| Admin | Bác sĩ (tài khoản riêng) | Khách hàng | Tổng phiên |
+| ---: | ---: | ---: | ---: |
+| 1 | 5 | 100 | 106 |
+| 1 | 10 | 200 | 211 |
+| 1 | 20 | 500 | 521 |
 
-1. Trên Kaggle Code, tạo notebook và chọn File → Import Notebook → Upload. Tải file [phase1_sqlite_kaggle.ipynb](../notebooks/phase1_sqlite_kaggle.ipynb).
-2. Đặt Accelerator None (CPU), Internet On. Notebook mặc định lấy nhánh `codex/phase1-sqlite-kaggle`; mã commit thực tế được ghi vào metadata.
-3. Run All. Notebook cài JDK 17 và dependency đã pin, chạy `mvnw verify`, rồi chạy benchmark.
-4. Save Version → Save & Run All. Giữ link notebook/version và tải gói ZIP output; không chỉ chụp ảnh một vài con số.
+Đây là các mức tải mô phỏng, không khẳng định quy mô nhân sự của phòng khám thực tế. Các lớp Locust dùng fixed_count, không chia theo trọng số 7/2/1. Mỗi bác sĩ có username riêng, một ca được phân công ban đầu và chỉ cập nhật lịch của mình.
 
-## Cấu hình phép đo
+Khách đọc danh mục/lịch trống, đặt–tra cứu; 20% yêu cầu mới hủy ngay. Một Admin đọc danh sách và phân công yêu cầu PENDING. Bác sĩ đọc, xác nhận và hoàn thành lịch. Lượt đọc và ghi đều kiểm tra HTTP/JSON; lỗi nghiệp vụ ngoài dự kiến cũng được tính lỗi, không bỏ qua.
 
-- 50 người dùng đồng thời; tốc độ tăng 5 users/giây; warm-up 15 giây; đo 120 giây. Có thể sửa các biến ở notebook, nhưng phải ghi rõ.
-- Java heap 512 MiB, SQLite pool 1, journal mặc định. Không áp dụng tối ưu Pha 2.
-- User class Customer/Admin/Doctor có trọng số 7/2/1. Các task của khách gồm đọc danh mục, xem lịch trống, đặt/tra cứu/hủy lịch; Admin/Bác sĩ đăng nhập rồi đọc dữ liệu được phân quyền.
-- Trọng số user và task không phải phần trăm HTTP request. Luồng phân công và kiểm tra quyền sở hữu được chạy ở preflight, không phải bài đo tranh chấp phân công đồng thời.
-- Mỗi lần đo tạo file DB mới trong thư mục output riêng. Warm-up và đo chính dùng cùng DB; thống kê warm-up được lưu riêng. Khởi tạo lại môi trường tương tự ở các lần so sánh.
-- Backend và Locust chạy trên cùng máy Kaggle. Ghi CPU/RAM/cgroup quota thực tế trong `metadata.json`; không mặc định mọi notebook đều có cùng cấu hình.
+## Đo ổn định
 
-## Bằng chứng cần giữ
+1. Backend/DB mới cho mỗi mức; preflight kiểm tra quyền, trùng giờ, chuyển trạng thái và JWT.
+2. Tạo đủ số phiên; chờ mọi bác sĩ/Admin đăng nhập xong, rồi làm nóng 15 giây. Tốc độ tạo phiên 50/giây.
+3. Tạm dừng phát request, chờ request đang chạy kết thúc, lưu setup CSV và reset thống kê.
+4. Giữ nguyên các phiên, chạy 120 giây với thời gian nghỉ 1–2,5 giây giữa tác vụ. CSV kiểm tra đúng 1 Admin và đủ bác sĩ/khách mỗi giây.
+5. Dừng phát request và chờ phần đang xử lý kết thúc. phases.json ghi thời gian đo thực tế; RPS tổng hợp = request / thời gian này. CSV gốc của Locust vẫn được giữ.
 
-Notebook/version có output thực thi; `metadata.json`, `preflight.json`, các CSV, HTML, đồ thị P95, server/Locust logs và `REPORT.md`. Runner tự đóng gói ZIP, không đưa token hoặc database vào ZIP.
+Login thuộc setup_stats.csv, không thuộc bảng tải ổn định. Chỉ tiêu tỷ lệ lỗi <=1% là lựa chọn của nhóm. Hàng chờ có thể tăng vì chỉ có một Admin phân công; tốc độ tạo yêu cầu không phải tốc độ hoàn thành ca khám.
 
-Ngưỡng lỗi ≤1% là mục tiêu do nhóm chọn, không phải yêu cầu định lượng của đề bài. Kết quả không đạt vẫn cần lưu trung thực và giải thích. Script dừng với lỗi nếu request không đúng hợp đồng hoặc phép đo không có request.
+## Chạy Kaggle và lưu notebook thật
 
-## Kiểm tra nhanh ở máy cá nhân
+Import notebooks/phase1_sqlite_kaggle.ipynb, chọn Accelerator None và Internet On. Save Version → Save & Run All. Notebook build/verify JDK 17, chạy notebook con bằng nbclient và lưu executed-fixed-admin.ipynb có execution_count/outputs thực tế, cùng ZIP kết quả. Lấy ZIP từ tab Output, không cần API token Kaggle.
 
-Python 3.11+, JDK 17+. Lệnh sau chỉ tạo **local smoke test**, không phải bằng chứng Kaggle:
+Nguồn mặc định là nhánh codex/phase1-sqlite-kaggle; commit thực tế được ghi trong metadata. Notebook đã chạy trong gói bằng chứng cố định đúng commit đó. Để tái lập, dùng commit ghi trong kết quả thay vì mặc nhiên lấy mã mới nhất.
 
-```powershell
-.\mvnw.cmd verify
-python -m pip install -r requirements-load.txt
-python scripts/run_load_test.py --environment local --users 10 --spawn-rate 5 --duration 20 --warmup 5 --output reports/local-smoke-01
-```
+## Chạy thử tại máy (không coi là bằng chứng Kaggle)
 
-Không ghi đè thư mục kết quả cũ; chọn tên output mới cho mỗi lần chạy. Sau khi chạy Kaggle, bổ sung kết quả vào [PHASE1_ACCEPTANCE.md](PHASE1_ACCEPTANCE.md).
+    ./mvnw -B verify
+    python -m pip install -r requirements-load.txt
+    python scripts/run_load_test.py --environment local --customers 10 --doctors 3 --spawn-rate 10 --warmup 2 --duration 10 --output reports/local-fixed-admin
+
+Mỗi output phải là thư mục mới. Backend dùng SQLite pool 1, journal delete, heap 512 MiB. Không có tối ưu DB cho Pha 2. Backend và Locust chia sẻ máy; đọc CPU/RAM/quota thực tế trong metadata.json, không suy ra tải tối đa hoặc số người dùng/ngày. Một lần mỗi mức chưa cho biết độ dao động giữa các lần lặp.
+
+Kết quả cũ 7/2/1 trong evidence/kaggle-20261025 là lịch sử của workload khác, không dùng làm so sánh trước/sau tối ưu. Kết quả mới, notebook đã chạy và metadata được liên kết từ README sau khi hoàn tất.
