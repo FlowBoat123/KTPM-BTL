@@ -103,7 +103,7 @@ public class AppointmentService {
     if (a.getStatus() == AppointmentStatus.COMPLETED
         || a.getStatus() == AppointmentStatus.CANCELLED)
       throw BusinessException.conflict("Terminal appointments cannot be reassigned");
-    Doctor doctor = catalog.activeDoctor(r.doctorId());
+    Doctor doctor = catalog.activeDoctorWithLock(r.doctorId());
     LocalTime end =
         schedule.validateSlot(
             r.appointmentDate(), r.startTime(), a.getService().getDurationMinutes());

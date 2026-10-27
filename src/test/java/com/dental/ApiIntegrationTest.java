@@ -35,6 +35,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -563,6 +566,43 @@ class ApiIntegrationTest {
         () ->
             jdbc.update(
                 "UPDATE appointments SET service_id=999999 WHERE id=?", b.get("id").asLong()));
+  }
+
+  @Test
+  void simultaneousAssignmentsCannotReserveOverlappingDoctorSlots() throws Exception {
+    String token = admin();
+    JsonNode first = book(2, "09:00"), second = book(1, "09:30");
+    var ready = new CountDownLatch(2);
+    var start = new CountDownLatch(1);
+    var workers = Executors.newFixedThreadPool(2);
+    try {
+      var attempts = List.of(first, second).stream()
+          .map(appointment -> workers.submit(() -> {
+            ready.countDown();
+            assertTrue(start.await(15, TimeUnit.SECONDS), "Start gate timed out");
+            return assign(appointment, 1, appointment == first ? "09:00" : "09:30", token)
+                .andReturn();
+          }))
+          .toList();
+      assertTrue(ready.await(15, TimeUnit.SECONDS), "Both requests must be ready");
+      start.countDown();
+      MvcResult firstResult = attempts.get(0).get(15, TimeUnit.SECONDS);
+      MvcResult secondResult = attempts.get(1).get(15, TimeUnit.SECONDS);
+      var statuses = List.of(firstResult.getResponse().getStatus(), secondResult.getResponse().getStatus())
+          .stream().sorted().toList();
+      assertEquals(List.of(200, 409), statuses);
+      assertEquals(1, jdbc.queryForObject(
+          "SELECT COUNT(*) FROM appointments WHERE doctor_id=1 AND status='ASSIGNED'", Integer.class));
+      assertEquals(1, jdbc.queryForObject(
+          "SELECT COUNT(*) FROM appointments WHERE doctor_id IS NULL AND status='PENDING'", Integer.class));
+      MvcResult conflict = firstResult.getResponse().getStatus() == 409 ? firstResult : secondResult;
+      assertEquals(409, json(conflict).get("status").asInt());
+      JsonNode pending = firstResult.getResponse().getStatus() == 409 ? first : second;
+      assign(pending, 1, "10:00", token).andExpect(status().isOk());
+    } finally {
+      start.countDown();
+      workers.shutdownNow();
+    }
   }
 
   @Test

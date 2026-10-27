@@ -1,96 +1,98 @@
 # Hệ thống đặt lịch phòng khám nha khoa
 
-Backend môn Kiến trúc phần mềm, Pha 1. **Java 17 · Spring Boot 3.5.16 · Spring Data JPA/Hibernate · Spring Security/JWT · SQLite.**
-README là tài liệu chính của nhóm. Gợi ý trình bày Google Meet trong 6 phút 30 giây: bài toán/nghiệp vụ 1 phút 45 giây; tổ chức code 1 phút; framework/API 1 phút; kiểm thử 1 phút 30 giây; vấn đề và trao đổi 1 phút 15 giây.
+Dự án xây dựng REST API để tiếp nhận yêu cầu khám, phân công bác sĩ và theo dõi lịch hẹn tại phòng khám nha khoa. Hệ thống có ba nhóm người dùng: khách hàng, quản trị viên (Admin) và bác sĩ.
 
 ## 1. Bài toán và phạm vi
 
-Phòng khám cần tiếp nhận giờ khám khách mong muốn, bố trí bác sĩ và tránh phân công ca chồng giờ.
+Khách hàng thường chọn giờ khám theo nhu cầu cá nhân, trong khi phòng khám cần sắp xếp dựa trên thời lượng dịch vụ và lịch của từng bác sĩ. Vì vậy, hệ thống tách **giờ khách mong muốn** khỏi **lịch khám được phân công**. Một yêu cầu đặt lịch chỉ chiếm giờ của bác sĩ sau khi Admin phân công.
 
-| Vai trò | Nghiệp vụ |
+| Vai trò | Chức năng |
 | --- | --- |
-| Khách hàng | Không cần tài khoản; xem thông tin/dịch vụ/bác sĩ, gửi yêu cầu khám, tra cứu hoặc hủy bằng mã. |
-| Admin | Đăng nhập, phân công/đổi bác sĩ và giờ khám, quản lý hoặc vô hiệu hóa bác sĩ. |
-| Bác sĩ | Đăng nhập, xem hồ sơ và lịch của mình; xác nhận, hoàn thành hoặc hủy theo trạng thái hợp lệ. |
+| Khách hàng | Xem phòng khám, dịch vụ, bác sĩ và lịch trống; gửi yêu cầu khám; tra cứu hoặc hủy bằng mã hẹn, không cần tài khoản. |
+| Admin | Xem các yêu cầu, phân công hoặc đổi bác sĩ và giờ khám; quản lý, cập nhật và vô hiệu hóa tài khoản bác sĩ. |
+| Bác sĩ | Xem lịch được giao, xác nhận, hoàn thành hoặc hủy lịch; xem và cập nhật hồ sơ cá nhân. |
 
-Phạm vi là REST backend; chưa có giao diện, thanh toán, hồ sơ bệnh án hay thông báo email/SMS.
+Phạm vi hiện tại là backend. Giao diện người dùng, thanh toán, hồ sơ bệnh án và thông báo email/SMS chưa được triển khai.
 
-## 2. Luồng chính và quy tắc dễ nhầm
+## 2. Quy trình đặt lịch
 
-Khách gửi **PENDING** → Admin phân bác sĩ/giờ thực tế **ASSIGNED** → bác sĩ xác nhận **CONFIRMED** → **COMPLETED**. ASSIGNED cũng có thể hoàn thành trực tiếp. PENDING/ASSIGNED/CONFIRMED có thể hủy sang CANCELLED; trạng thái kết thúc không mở lại.
+Khách gửi yêu cầu ở trạng thái **PENDING**. Admin chọn bác sĩ và thời gian thực tế, chuyển lịch sang **ASSIGNED**. Bác sĩ có thể xác nhận thành **CONFIRMED**, sau đó đánh dấu **COMPLETED** khi khám xong. Hệ thống cũng cho phép hoàn thành trực tiếp từ ASSIGNED. Lịch chưa kết thúc có thể chuyển sang CANCELLED theo quyền của người thao tác; COMPLETED và CANCELLED không được mở lại.
 
-- Giờ khách chọn là **mong muốn, chưa giữ chỗ**; khách không gửi doctorId. Lịch trống chỉ để tham khảo.
-- Giờ khám ở tương lai, bắt đầu theo bước 30 phút và đủ thời lượng dịch vụ trong giờ mở cửa. Tra cứu ngày quá khứ trả 400.
-- Cùng bác sĩ/ngày, trùng khi `start_cũ < end_mới && end_cũ > start_mới`. Ca 09:00–10:00 và 10:00–10:30 được nối tiếp.
-- ASSIGNED/CONFIRMED/COMPLETED chiếm giờ; PENDING/CANCELLED không chặn. Service kiểm tra trước, **trigger SQLite** bảo vệ khi ghi; xung đột trả 409. `@Version` phát hiện cập nhật cùng bản ghi.
-- Khách chỉ hủy trước giờ bắt đầu. Bác sĩ truy cập lịch người khác nhận 403. Không vô hiệu hóa bác sĩ còn lịch ASSIGNED/CONFIRMED.
+Các quy tắc chính:
 
-## 3. Tổ chức mã nguồn và kỹ thuật
+- Thời gian khám phải ở tương lai, bắt đầu theo bước 30 phút và nằm trọn trong giờ mở cửa, kể cả thời lượng dịch vụ.
+- Hai ca của cùng bác sĩ, cùng ngày bị trùng nếu `start_cũ < end_mới && end_cũ > start_mới`. Hai ca 09:00–10:00 và 10:00–10:30 được phép nối tiếp.
+- ASSIGNED, CONFIRMED và COMPLETED chiếm giờ; PENDING và CANCELLED không chặn lịch. Danh sách giờ trống chỉ mang tính tham khảo, không giữ chỗ cho khách.
+- Service kiểm tra lịch trước khi phân công. Trigger SQLite kiểm tra lại khi ghi dữ liệu; xung đột trả HTTP 409. Trường `@Version` phát hiện cập nhật đồng thời trên cùng bản ghi.
+- Khách chỉ hủy trước giờ hẹn. Bác sĩ không được truy cập lịch của người khác. Admin không thể vô hiệu hóa bác sĩ đang còn lịch ASSIGNED hoặc CONFIRMED.
 
-`HTTP/JSON → Security/JWT → Controller + DTO → Service → Repository → SQLite`
+## 3. Thiết kế và tổ chức mã nguồn
 
-| Vị trí | Trách nhiệm |
+Backend sử dụng **Java 17, Spring Boot 3.5.16, Spring Data JPA/Hibernate, Spring Security và SQLite**. Request đi qua bộ lọc xác thực, Controller, Service và Repository trước khi truy cập dữ liệu.
+
+| Thành phần | Trách nhiệm |
 | --- | --- |
-| `controller/`, `dto/` | 26 API, ánh xạ HTTP, validation và DTO/mapper; không trả password hash. |
-| `service/` | Appointment/Schedule/Doctor/Catalog/Auth: nghiệp vụ và giao dịch. |
-| `repository/`, `entity/` | Spring Data JPA/ORM; 6 bảng accounts, doctors, clinics, dental_services, appointments, login_sessions. |
-| `security/`, `exception/`, `config/` | JWT filter tập trung, principal, ánh xạ BusinessException sang HTTP, dữ liệu mẫu. |
-| `src/main/resources/schema.sql` | Khóa ngoại, index, trigger chống chồng lịch; pool SQLite 1 kết nối. |
-| `src/test/`, `.github/workflows/ci.yml` | API integration, ranh giới tầng/profile local; CI Java 17 và Docker smoke. |
+| `src/main/java/com/dental/controller/`, `dto/` | Nhận request HTTP, kiểm tra đầu vào, chuyển đổi DTO và trả response JSON. |
+| `service/` | Xử lý nghiệp vụ đặt lịch, phân công, quản lý bác sĩ và xác thực; xác định ranh giới giao dịch. |
+| `repository/`, `entity/` | Truy cập dữ liệu qua Spring Data JPA và ánh xạ sáu bảng: accounts, doctors, clinics, dental_services, appointments, login_sessions. |
+| `security/`, `exception/`, `config/` | Kiểm tra JWT và quyền truy cập, ánh xạ lỗi nghiệp vụ sang HTTP, cấu hình và khởi tạo dữ liệu. |
+| `src/main/resources/` | `schema.sql` định nghĩa bảng, index và trigger SQLite; `application.yml` cấu hình kết nối, profile và JWT. |
+| `src/test/`, `.github/workflows/ci.yml` | Kiểm thử API, ranh giới kiến trúc, profile local và quá trình chạy bằng Docker. |
 
-Service không import HTTP/Servlet/JPA/JDBC/Hibernate/Spring Data; `ArchitectureTest` kiểm tra ranh giới này. Spring `@Service`/`@Transactional` vẫn quản lý thành phần và giao dịch. Mật khẩu băm BCrypt; JWT 120 phút gắn phiên trong DB, nên đăng xuất/vô hiệu hóa tài khoản thu hồi quyền. Kiến trúc là một backend phân tầng, chưa phải microservices.
+Controller xử lý HTTP, còn Service trả kết quả hoặc ném `BusinessException`. Tầng Service không import thư viện HTTP, Servlet, JPA hay JDBC; quy tắc này được kiểm tra bằng ArchUnit. Spring vẫn quản lý Service và giao dịch qua `@Service`, `@Transactional`.
 
-## 4. Chạy và xem đặc tả API
+Mật khẩu được băm bằng BCrypt. JWT có thời hạn 120 phút và gắn với phiên đăng nhập trong database. Bộ lọc kiểm tra cả token, phiên và trạng thái tài khoản, nên đăng xuất hoặc vô hiệu hóa tài khoản sẽ thu hồi quyền truy cập. Dữ liệu trả về không chứa password hash.
 
-Yêu cầu JDK 17+ hoặc Docker. SQLite không cần database server.
+## 4. Cài đặt và API
+
+Cần JDK 17 trở lên hoặc Docker. SQLite lưu dữ liệu trong file nên không cần cài database server.
 
 ```bash
-./mvnw -B verify                 # Windows: .\mvnw.cmd -B verify
-./mvnw spring-boot:run            # Windows: .\mvnw.cmd spring-boot:run
-# Hoặc:
+./mvnw -B verify
+./mvnw spring-boot:run
+# Trên Windows dùng .\mvnw.cmd thay cho ./mvnw
+# Hoặc chạy bằng Docker:
 docker compose up -d --build
 ```
 
-API: http://localhost:8080; Swagger: http://localhost:8080/swagger-ui/index.html.
-Tài khoản giả lập: `admin / Admin123!`, `doctor1 / Doctor123!`, `doctor2 / Doctor123!`.
-Docker lưu SQLite trong volume; `docker compose down` giữ dữ liệu.
+API chạy tại http://localhost:8080; Swagger UI tại http://localhost:8080/swagger-ui/index.html. Profile demo có các tài khoản `admin / Admin123!`, `doctor1 / Doctor123!` và `doctor2 / Doctor123!`. Docker lưu database trong volume; `docker compose down` giữ lại dữ liệu.
 
-**Đặc tả trong GitHub:** [OpenAPI 3.1 JSON](openapi.json) · [Preview Swagger UI](https://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FFlowBoat123%2FKTPM-BTL%2FKiem-thu-hieu-nang-kaggle%2Fopenapi.json). JSON có ví dụ đăng nhập, đặt lịch, phân công và đổi trạng thái.
-Preview dùng để đọc đặc tả; thử request bằng Swagger local khi backend đang chạy.
+[Đặc tả OpenAPI JSON](openapi.json) mô tả 26 API: 8 public, 3 xác thực, 5 dành cho bác sĩ và 10 dành cho Admin. Có thể đọc bằng [Swagger preview](https://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FFlowBoat123%2FKTPM-BTL%2Fmain%2Fopenapi.json); để gửi request, dùng Swagger UI của backend đang chạy. JSON có ví dụ đăng nhập, đặt lịch, phân công và đổi trạng thái.
 
-API gồm GET/POST/DELETE và PUT/PATCH: public 8, Auth 3, Doctor 5, Admin 10. Ví dụ GET `/api/admin/appointments` và POST `/api/admin/doctors` cần token ADMIN.
-Lỗi: 400 đầu vào sai, 401 chưa xác thực, 403 thiếu quyền, 404 không tìm thấy, 409 xung đột.
-Xuất lại đặc tả từ ứng dụng đang chạy: `python scripts/export_openapi.py`.
+Các API dùng GET, POST, DELETE, PUT và PATCH. Chẳng hạn, `GET /api/admin/appointments` và `POST /api/admin/doctors` đều yêu cầu token ADMIN. Mã lỗi gồm 400 khi đầu vào sai, 401 khi chưa xác thực, 403 khi không đủ quyền, 404 khi không tìm thấy dữ liệu và 409 khi xung đột. Xuất lại đặc tả bằng `python scripts/export_openapi.py`.
 
-## 5. Kiểm thử và hiệu năng Kaggle CPU
+## 5. Kiểm thử và đánh giá hiệu năng
 
-**19 test Java đạt** (17 API, 1 kiến trúc, 1 profile local). Docker smoke kiểm tra luồng API, quyền, trùng giờ và dữ liệu sau restart. Test dùng database tạm.
+Bộ kiểm thử Java gồm **20 test**: 18 test tích hợp API, một test ranh giới kiến trúc và một test profile local. Các trường hợp được kiểm tra gồm phân quyền, chuyển trạng thái, trùng giờ, thu hồi phiên và hai yêu cầu phân công chồng giờ chạy đồng thời. Test dùng database tạm. Script `python scripts/docker_smoke.py` kiểm tra thêm luồng API và khả năng giữ dữ liệu SQLite sau khi container khởi động lại.
 
-**Kịch bản mới:** đúng **1 phiên Admin** ở mọi mức; **5/10/20 bác sĩ** có tài khoản riêng và **100/200/500 khách hàng** (tổng 106/211/521 phiên). Đây là tải giả lập, chưa phải cơ cấu nhân sự thực tế của một phòng khám.
+### Cấu hình đo trên Kaggle
 
-Khách đọc, đặt–tra cứu; 20% yêu cầu mới hủy ngay, còn lại chờ xử lý. Admin đọc/phân công; bác sĩ đọc/xác nhận/hoàn thành. Tác vụ nghỉ 1–2,5 giây. Các phiên đăng nhập đầy đủ, làm nóng 15 giây, rồi reset thống kê và **giữ nguyên phiên** để đo 120 giây. Login/warm-up lưu riêng trong setup CSV.
+Lần đo ngày **26/10/2026** sử dụng SQLite và mã nguồn tại commit `298d97fcd96d0bb89c617bba782f47d2a4f23584`. Máy Kaggle có CPU Xeon 2,20 GHz, 4 CPU logic với quota 4 CPU và RAM giới hạn 30 GiB. Backend chạy JDK 17, heap 512 MiB, pool một kết nối SQLite, journal mode `delete`. Locust và backend cùng dùng tài nguyên máy này.
 
-**Kaggle chạy thành công ngày 26/10/2026**, mã nguồn `298d97f`. Xeon 2,20 GHz, 4 CPU logic/quota 4 CPU, RAM giới hạn 30 GiB; JDK 17, heap 512 MiB, SQLite pool 1, journal `delete`. Mỗi mức chạy một lần; thời gian đo thực tế 120,05–120,24 giây, gồm chờ request cuối hoàn tất.
+Locust tạo các phiên giả lập, giữ **một phiên Admin** ở mỗi mức; số bác sĩ lần lượt là 5, 10, 20 và số khách hàng là 100, 200, 500. Mỗi bác sĩ đăng nhập bằng tài khoản riêng. Khách đọc thông tin, xem lịch trống, đặt và tra cứu lịch; 20% yêu cầu mới được hủy ngay. Admin đọc và phân công; bác sĩ xem, xác nhận và hoàn thành lịch. Giữa các tác vụ có thời gian nghỉ 1–2,5 giây.
 
-| Khách / BS / Admin | Request | RPS | TB (ms) | P95 (ms) | Lỗi |
+Sau khi tạo đủ phiên và đăng nhập xong, bộ đo làm nóng 15 giây, đặt lại thống kê rồi đo 120 giây với các phiên đang có. Login và warm-up được lưu riêng. Mỗi mức chạy một lần, với database mới; thời gian đo thực tế là 120,05–120,24 giây do chờ các request cuối kết thúc.
+
+### Kết quả
+
+| Khách / bác sĩ / Admin | Request | Request/giây | Trung bình (ms) | P95 (ms) | Lỗi |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 100 / 5 / 1 | 16.280 | 135,61 | 6,53 | 22 | 0% |
 | 200 / 10 / 1 | 32.477 | 270,50 | 10,26 | 32 | 0% |
 | 500 / 20 / 1 | 68.116 | 566,49 | 147,20 | 310 | 0% |
 
-P95 nghĩa là khoảng 95% request có độ trễ không vượt giá trị đó. Mức lớn nhất vẫn không lỗi nhưng độ trễ tăng rõ. **2.906 request đặt lịch chỉ đi cùng 41 lần phân công** trong cửa sổ đo: một Admin là giới hạn xử lý nghiệp vụ của kịch bản, nên RPS không phải số ca khám hoàn tất.
+P95 thể hiện mức độ trễ mà khoảng 95% request không vượt quá. Khi tăng từ 200 lên 500 khách, throughput tiếp tục tăng nhưng độ trễ tăng rõ: P95 từ 32 lên 310 ms. Không có request lỗi trong ba cửa sổ đo này.
 
-**Bằng chứng:** [notebook đã chạy, có output](notebooks/results/fixed_admin_kaggle_20261026.ipynb) · [CSV tổng hợp](performance/kaggle-20261026/comparison.csv) · [ZIP gốc chứa metadata/CSV/log từng mức](performance/kaggle-20261026/results.zip) · [Kaggle v4](https://www.kaggle.com/code/flowboat/ktpm-phase-1-sqlite-cpu-baseline?scriptVersionId=362443343). Notebook Kaggle đang riêng tư; bản thực thi và kết quả được lưu trong GitHub để người chấm đọc được.
+Ở mức lớn nhất có 2.906 lượt đặt lịch nhưng chỉ 41 lượt phân công. Điều này cho thấy tốc độ xử lý yêu cầu nghiệp vụ của một Admin thấp hơn tốc độ tạo yêu cầu trong kịch bản. Vì vậy, throughput API không thể dùng thay cho số ca khám được xử lý hoàn tất. Kết quả chỉ áp dụng cho commit và kịch bản đã đo; phần khóa phân công bổ sung sau lần đo này chưa có số liệu Kaggle mới.
 
-**Chạy lại:** import [notebook mẫu](notebooks/phase1_sqlite_kaggle.ipynb) vào Kaggle, chọn Accelerator None, Internet On, rồi Save & Run All. Notebook ghi commit thực tế vào metadata và xuất notebook có output cùng ZIP. Muốn tái lập số trên, dùng notebook đã chạy cố định commit `298d97fcd96d0bb89c617bba782f47d2a4f23584`.
+Số liệu được lưu tại [CSV tổng hợp](performance/kaggle-20261026/comparison.csv), [notebook đã thực thi](notebooks/results/fixed_admin_kaggle_20261026.ipynb) và [ZIP gốc](performance/kaggle-20261026/results.zip) chứa metadata, CSV và log từng mức. [Bản Kaggle](https://www.kaggle.com/code/flowboat/ktpm-phase-1-sqlite-cpu-baseline?scriptVersionId=362443343) hiện riêng tư; notebook có output đã được lưu trong repository.
 
-Thử tại máy: `python -m pip install -r requirements-load.txt`, rồi `python scripts/run_load_test.py --environment local --customers 10 --doctors 3 --spawn-rate 10 --warmup 2 --duration 8 --output reports/local-smoke`. Kiểm tra Docker và giữ dữ liệu sau restart: `python scripts/docker_smoke.py` (dùng project/volume kiểm thử riêng).
-Kịch bản mới thay cả cơ cấu phiên, nghiệp vụ tạo tải và cách làm nóng; **không dùng số cũ 7/2/1 để kết luận tối ưu nhanh hơn**.
+Để chạy lại, import [notebook mẫu](notebooks/phase1_sqlite_kaggle.ipynb) vào Kaggle, chọn Accelerator None, Internet On rồi Save & Run All. Notebook mẫu lấy mã từ `main` và ghi lại commit thực tế. Notebook kết quả cố định commit nêu trên để tái lập phép đo. Có thể chạy thử ở máy bằng cách cài `requirements-load.txt`, sau đó dùng `python scripts/run_load_test.py --environment local --customers 10 --doctors 3 --spawn-rate 10 --warmup 2 --duration 8 --output reports/local-smoke`.
 
-## 6. Vấn đề dễ thấy và hướng phát triển
+## 6. Hạn chế và hướng phát triển
 
-Pool một kết nối SQLite, danh sách chưa phân trang và kiểm tra phiên mỗi request là các vị trí cần đo thêm. Một Admin phân công hữu hạn có thể làm hàng chờ PENDING tăng dù API còn nhanh. Chưa có migration schema, lịch nghỉ riêng từng bác sĩ hoặc đổi mật khẩu.
+Danh sách lịch hẹn chưa phân trang; pool SQLite chỉ có một kết nối và mỗi request có xác thực đều kiểm tra phiên trong database. Đây là các vị trí cần đo thêm trước khi chọn cách tối ưu. Một Admin có thể trở thành điểm nghẽn xử lý khi yêu cầu PENDING tăng. Hệ thống cũng chưa có migration schema, lịch nghỉ riêng cho bác sĩ hoặc chức năng đổi mật khẩu.
 
-RPS/P95 chỉ áp dụng cho workload đã ghi; Locust và backend chia sẻ Kaggle CPU, chưa xác định tải tối đa hay số người dùng/ngày. Pha 2 cần đo CPU/thời gian chờ/truy vấn, rồi thử cải tiến và đo lặp trên cùng phần cứng, dữ liệu và kịch bản.
+Phép đo hiện tại chưa xác định tải tối đa và chưa đánh giá độ dao động giữa các lần chạy. Bước tiếp theo là đo CPU, thời gian chờ và truy vấn, sau đó so sánh cải tiến bằng cùng phần cứng, dữ liệu và kịch bản.
 
-**Nguồn:** [Yêu cầu môn học](https://github.com/maytinhdibo/KTPM-architecture-solution/blob/main/2026.md) · [Báo cáo trước khi đổi kịch bản tải](https://docs.google.com/document/d/1ccs7ITYj_TdFpNJUcTsn6Juie07U2mtpBiy--WwlAJk).
+Yêu cầu bài tập: [Kiến trúc phần mềm 2026](https://github.com/maytinhdibo/KTPM-architecture-solution/blob/main/2026.md).
