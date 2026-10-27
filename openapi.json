@@ -1,0 +1,1952 @@
+{
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "properties": {
+          "errors": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "status",
+          "message",
+          "errors"
+        ],
+        "type": "object"
+      },
+      "AppointmentView": {
+        "properties": {
+          "appointmentDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "doctorId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "doctorName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "endTime": {
+            "$ref": "#/components/schemas/LocalTime"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "note": {
+            "type": "string"
+          },
+          "patientName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "preferredDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "preferredTime": {
+            "$ref": "#/components/schemas/LocalTime"
+          },
+          "serviceId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "serviceName": {
+            "type": "string"
+          },
+          "startTime": {
+            "$ref": "#/components/schemas/LocalTime"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "ASSIGNED",
+              "CONFIRMED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Assignment": {
+        "properties": {
+          "appointmentDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "doctorId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "startTime": {
+            "$ref": "#/components/schemas/LocalTime"
+          }
+        },
+        "required": [
+          "appointmentDate",
+          "doctorId",
+          "startTime"
+        ],
+        "type": "object"
+      },
+      "AvailableSlots": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "doctorId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "durationMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/LocalTime"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "Booking": {
+        "properties": {
+          "email": {
+            "maxLength": 160,
+            "minLength": 0,
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "patientName": {
+            "maxLength": 120,
+            "minLength": 0,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 20,
+            "minLength": 0,
+            "pattern": "[+]?[0-9][0-9 ()-]{6,18}[0-9]",
+            "type": "string"
+          },
+          "preferredDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "preferredTime": {
+            "$ref": "#/components/schemas/LocalTime"
+          },
+          "serviceId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "patientName",
+          "phone",
+          "preferredDate",
+          "preferredTime",
+          "serviceId"
+        ],
+        "type": "object"
+      },
+      "ClinicView": {
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "closingTime": {
+            "$ref": "#/components/schemas/LocalTime"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "openingTime": {
+            "$ref": "#/components/schemas/LocalTime"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DoctorCreate": {
+        "properties": {
+          "description": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 160,
+            "minLength": 0,
+            "type": "string"
+          },
+          "fullName": {
+            "maxLength": 120,
+            "minLength": 0,
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 72,
+            "minLength": 8,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 20,
+            "minLength": 0,
+            "pattern": "[+]?[0-9][0-9 ()-]{6,18}[0-9]",
+            "type": "string"
+          },
+          "specialization": {
+            "maxLength": 120,
+            "minLength": 0,
+            "type": "string"
+          },
+          "username": {
+            "pattern": "[a-zA-Z0-9_.-]{3,80}",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName",
+          "password",
+          "specialization",
+          "username"
+        ],
+        "type": "object"
+      },
+      "DoctorUpdate": {
+        "properties": {
+          "description": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 160,
+            "minLength": 0,
+            "type": "string"
+          },
+          "fullName": {
+            "maxLength": 120,
+            "minLength": 0,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 20,
+            "minLength": 0,
+            "pattern": "[+]?[0-9][0-9 ()-]{6,18}[0-9]",
+            "type": "string"
+          },
+          "specialization": {
+            "maxLength": 120,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName",
+          "specialization"
+        ],
+        "type": "object"
+      },
+      "DoctorView": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "specialization": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "LocalTime": {
+        "properties": {
+          "hour": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "minute": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "nano": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "second": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "Login": {
+        "properties": {
+          "password": {
+            "maxLength": 72,
+            "minLength": 0,
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 80,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "password",
+          "username"
+        ],
+        "type": "object"
+      },
+      "ServiceView": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "StatusChange": {
+        "properties": {
+          "status": {
+            "enum": [
+              "PENDING",
+              "ASSIGNED",
+              "CONFIRMED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "User": {
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "role": {
+            "enum": [
+              "ADMIN",
+              "DOCTOR"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "bearerFormat": "JWT",
+        "name": "BearerAuth",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "name": "Dental Clinic Team"
+    },
+    "description": "Hệ thống backend đặt lịch khám nha khoa - Đồ án KTPM-BTL 2026",
+    "title": "Dental Clinic Management API",
+    "version": "1.0.0",
+    "x-export-note": "Generated from /v3/api-docs; error schemas corrected to the shared ApiError response."
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/admin/appointments": {
+      "get": {
+        "description": "Lấy danh sách tất cả các lịch hẹn trong hệ thống theo thứ tự ngày giờ",
+        "operationId": "appointments_1",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentView"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Lấy danh sách lịch hẹn thành công"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Xem toàn bộ lịch hẹn",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/appointments/{id}": {
+      "get": {
+        "description": "Lấy thông tin chi tiết của lịch hẹn theo ID",
+        "operationId": "appointment_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentView"
+                }
+              }
+            },
+            "description": "Lấy chi tiết lịch hẹn thành công"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Lịch hẹn không tồn tại"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Xem chi tiết 1 lịch hẹn",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/appointments/{id}/assign": {
+      "patch": {
+        "description": "Admin chỉ định bác sĩ, ấn định ngày khám và giờ bắt đầu. Kiểm tra slot trống, bước 30 phút và không trùng lịch",
+        "operationId": "assign",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "appointmentDate": "2030-01-02",
+                "doctorId": 1,
+                "startTime": "09:00"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/Assignment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentView"
+                }
+              }
+            },
+            "description": "Phân công thành công, lịch chuyển sang ASSIGNED"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Dữ liệu không hợp lệ / Thời gian ngoài giờ làm việc"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Lịch hẹn hoặc Bác sĩ không tồn tại"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bác sĩ bị trùng lịch hoặc lịch hẹn đã COMPLETED/CANCELLED"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Phân công bác sĩ & giờ khám",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/appointments/{id}/status": {
+      "patch": {
+        "description": "Cập nhật trạng thái cuộc hẹn tuân thủ luồng State Machine",
+        "operationId": "status_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "status": "CANCELLED"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/StatusChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentView"
+                }
+              }
+            },
+            "description": "Cập nhật trạng thái thành công"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Dữ liệu trạng thái không hợp lệ"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Lịch hẹn không tồn tại"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chuyển trạng thái vi phạm quy tắc State Machine"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Đổi trạng thái lịch hẹn",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/doctors": {
+      "get": {
+        "description": "Lấy danh sách tất cả bác sĩ bao gồm cả tài khoản đã vô hiệu hóa",
+        "operationId": "doctors",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorView"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Lấy danh sách bác sĩ thành công"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Xem danh sách toàn bộ bác sĩ",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "post": {
+        "description": "Tạo tài khoản đăng nhập (Role DOCTOR) và thông tin hồ sơ bác sĩ mới",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorView"
+                }
+              }
+            },
+            "description": "Tạo bác sĩ thành công"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Dữ liệu không hợp lệ (mật khẩu < 8 ký tự, định dạng email/SĐT sai)"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Username đã tồn tại"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Tạo tài khoản và hồ sơ bác sĩ mới",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/doctors/{id}": {
+      "delete": {
+        "description": "Soft delete (active = false). Thu hồi quyền đăng nhập nhưng giữ nguyên lịch sử khám. Bị chặn nếu bác sĩ còn lịch hẹn đang mở",
+        "operationId": "disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Vô hiệu hóa bác sĩ thành công"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bác sĩ không tồn tại"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bác sĩ vẫn còn lịch hẹn đang mở (ASSIGNED hoặc CONFIRMED)"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Vô hiệu hóa tài khoản bác sĩ",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "get": {
+        "description": "Lấy thông tin hồ sơ bác sĩ theo ID",
+        "operationId": "doctor",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorView"
+                }
+              }
+            },
+            "description": "Lấy chi tiết bác sĩ thành công"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bác sĩ không tồn tại"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Xem chi tiết hồ sơ bác sĩ",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "put": {
+        "description": "Cập nhật thông tin họ tên, chuyên môn, SĐT, email, mô tả của bác sĩ",
+        "operationId": "update_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorView"
+                }
+              }
+            },
+            "description": "Cập nhật hồ sơ thành công"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Dữ liệu cập nhật không hợp lệ"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bác sĩ không tồn tại"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Cập nhật hồ sơ bác sĩ",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/doctors/{id}/appointments": {
+      "get": {
+        "description": "Lấy danh sách tất cả các lịch hẹn được phân công cho bác sĩ theo ID",
+        "operationId": "doctorAppointments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentView"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Lấy danh sách lịch hẹn thành công"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Chưa đăng nhập / Token không hợp lệ"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không có quyền Admin"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bác sĩ không tồn tại"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Xem lịch hẹn của 1 bác sĩ",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/appointments": {
+      "post": {
+        "description": "Đặt lịch hẹn mới ở trạng thái PENDING mà không chỉ định bác sĩ. Hệ thống sinh mã tra cứu (booking code)",
+        "operationId": "book",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "note": "Synthetic example",
+                "patientName": "Nguyen Van A",
+                "phone": "0912345678",
+                "preferredDate": "2030-01-02",
+                "preferredTime": "09:00",
+                "serviceId": 2
+              },
+              "schema": {
+                "$ref": "#/components/schemas/Booking"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentView"
+                }
+              }
+            },
+            "description": "Đặt lịch hẹn thành công"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Dữ liệu không hợp lệ (thời gian ở quá khứ, bước giờ sai, ngoài giờ làm việc, sai định dạng SĐT/Email)"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Dịch vụ không tồn tại"
+          }
+        },
+        "summary": "Khách hàng đặt lịch hẹn",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/api/appointments/{code}": {
+      "delete": {
+        "description": "Hủy lịch hẹn nếu lịch đang ở trạng thái hợp lệ để hủy",
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentView"
+                }
+              }
+            },
+            "description": "Hủy lịch hẹn thành công (trạng thái chuyển sang CANCELLED)"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Lịch hẹn không tồn tại"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Không thể hủy lịch (đã quá giờ hẹn hoặc trạng thái không cho phép)"
+          }
+        },
+        "summary": "Khách hàng hủy lịch hẹn theo mã",
+        "tags": [
+          "Public"
+        ]
+      },
+      "get": {
+        "description": "Tra cứu thông tin chi tiết lịch hẹn bằng booking code được cấp lúc đặt lịch",
+        "operationId": "lookup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentView"
+                }
+              }
+            },
+            "description": "Tra cứu lịch hẹn thành công"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Lịch hẹn không tồn tại"
+          }
+        },
+        "summary": "Khách hàng tra cứu lịch hẹn theo mã",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "description": "Xác thực bằng username và password, trả về Bearer JWT token",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "password": "Admin123!",
+                "username": "admin"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Login"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid username or password"
+          }
+        },
+        "summary": "Đăng nhập",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "description": "Thu hồi token JWT hiện tại của phiên đăng nhập",
+        "operationId": "logout",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Đăng xuất",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "description": "Lấy thông tin tài khoản và vai trò của token đang sử dụng",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Thông tin tài khoản hiện tại",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/clinic": {
+      "get": {
+        "description": "Lấy thông tin chung, địa chỉ, giờ mở/đóng cửa phòng khám",
+        "operationId": "clinic",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicView"
+                }
+              }
+            },
+            "description": "Lấy thông tin phòng khám thành công"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Phòng khám chưa được cấu hình"
+          }
+        },
+        "summary": "Xem thông tin phòng khám",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/api/doctor/appointments": {
+      "get": {
+        "description": "Lấy danh sách các lịch hẹn được phân công cho bác sĩ này",
+        "operationId": "appointments",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentView"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Xem lịch hẹn của bác sĩ đang đăng nhập",
+        "tags": [
+          "Doctor"
+        ]
+      }
+    },
+    "/api/doctor/appointments/{id}": {
+      "get": {
+        "description": "Xem chi tiết ca khám nếu thuộc quyền phụ trách của bác sĩ này",
+        "operationId": "appointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Xem chi tiết 1 lịch hẹn của bác sĩ",
+        "tags": [
+          "Doctor"
+        ]
+      }
+    },
+    "/api/doctor/appointments/{id}/status": {
+      "patch": {
+        "description": "Bác sĩ cập nhật trạng thái (CONFIRMED, COMPLETED hoặc CANCELLED)",
+        "operationId": "status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "status": "CONFIRMED"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/StatusChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Bác sĩ đổi trạng thái lịch hẹn",
+        "tags": [
+          "Doctor"
+        ]
+      }
+    },
+    "/api/doctor/profile": {
+      "get": {
+        "description": "Lấy thông tin hồ sơ của bác sĩ đang đăng nhập",
+        "operationId": "profile",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Xem hồ sơ bác sĩ",
+        "tags": [
+          "Doctor"
+        ]
+      },
+      "put": {
+        "description": "Cập nhật thông tin cá nhân của bác sĩ đang đăng nhập",
+        "operationId": "update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Authentication required / invalid token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Role or appointment ownership denied"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Cập nhật hồ sơ bác sĩ",
+        "tags": [
+          "Doctor"
+        ]
+      }
+    },
+    "/api/doctors": {
+      "get": {
+        "description": "Lấy danh sách các bác sĩ đang hoạt động trong phòng khám",
+        "operationId": "doctors_1",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorView"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Lấy danh sách bác sĩ thành công"
+          }
+        },
+        "summary": "Xem danh sách bác sĩ công khai",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/api/doctors/{id}": {
+      "get": {
+        "description": "Lấy thông tin hồ sơ của 1 bác sĩ theo ID",
+        "operationId": "doctor_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorView"
+                }
+              }
+            },
+            "description": "Lấy chi tiết bác sĩ thành công"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bác sĩ không tồn tại hoặc đã vô hiệu hóa"
+          }
+        },
+        "summary": "Xem thông tin chi tiết bác sĩ",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/api/doctors/{id}/available-slots": {
+      "get": {
+        "description": "Tính toán các slot giờ 30 phút còn khả dụng của bác sĩ trong 1 ngày cụ thể",
+        "operationId": "slots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "serviceId",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableSlots"
+                }
+              }
+            },
+            "description": "Lấy danh sách khung giờ khả dụng thành công"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Ngày tra cứu ở quá khứ hoặc định dạng không hợp lệ"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bác sĩ hoặc Dịch vụ không tồn tại"
+          }
+        },
+        "summary": "Xem các khung giờ còn trống của bác sĩ",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/api/services": {
+      "get": {
+        "description": "Lấy danh sách các dịch vụ nha khoa đang cung cấp, thời lượng và giá niêm yết",
+        "operationId": "services",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceView"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Lấy danh mục dịch vụ thành công"
+          }
+        },
+        "summary": "Xem danh mục dịch vụ nha khoa",
+        "tags": [
+          "Public"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Local / Docker",
+      "url": "http://localhost:8080"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Các API công khai cho khách hàng (thông tin phòng khám, dịch vụ, bác sĩ, đặt hẹn, tra cứu)",
+      "name": "Public"
+    },
+    {
+      "description": "Xác thực tài khoản và quản lý phiên đăng nhập (JWT)",
+      "name": "Auth"
+    },
+    {
+      "description": "Các API quản trị hệ thống phòng khám, phân công lịch và quản lý bác sĩ",
+      "name": "Admin"
+    },
+    {
+      "description": "Các API dành cho Bác sĩ (xem lịch, đổi trạng thái, cập nhật hồ sơ cá nhân)",
+      "name": "Doctor"
+    }
+  ]
+}

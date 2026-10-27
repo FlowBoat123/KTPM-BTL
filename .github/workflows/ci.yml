@@ -14,3 +14,31 @@ jobs:
           cache: maven
       - run: chmod +x mvnw
       - run: ./mvnw -B verify
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-load.txt
+      - run: python scripts/run_load_test.py --environment local --customers 10 --doctors 3 --spawn-rate 10 --duration 8 --warmup 2 --output reports/load-smoke
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fixed-admin-smoke-evidence
+          path: |
+            reports/load-smoke/*.json
+            reports/load-smoke/*.csv
+            reports/load-smoke/*.html
+            reports/load-smoke/*.png
+            reports/load-smoke/*.log
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/docker_smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-smoke-evidence
+          path: reports/
