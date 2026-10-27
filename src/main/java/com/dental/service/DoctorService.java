@@ -2,7 +2,7 @@ package com.dental.service;
 
 import com.dental.dto.*;
 import com.dental.entity.*;
-import com.dental.exception.ApiException;
+import com.dental.exception.BusinessException;
 import com.dental.repository.*;
 import java.util.List;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,11 +31,11 @@ public class DoctorService {
   public Doctor byAccount(Long id) {
     return doctors
         .findByAccountId(id)
-        .orElseThrow(() -> ApiException.notFound("Doctor profile not found"));
+        .orElseThrow(() -> BusinessException.notFound("Doctor profile not found"));
   }
 
   public Doctor byId(Long id) {
-    return doctors.findById(id).orElseThrow(() -> ApiException.notFound("Doctor not found"));
+    return doctors.findById(id).orElseThrow(() -> BusinessException.notFound("Doctor not found"));
   }
 
   public List<Responses.DoctorView> all() {
@@ -53,9 +53,9 @@ public class DoctorService {
   @Transactional
   public Responses.DoctorView create(Requests.DoctorCreate r) {
     if (accounts.findByUsername(r.username()).isPresent())
-      throw ApiException.conflict("Username already exists");
+      throw BusinessException.conflict("Username already exists");
     if (r.password().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72)
-      throw ApiException.invalid("Password must not exceed 72 UTF-8 bytes");
+      throw BusinessException.invalid("Password must not exceed 72 UTF-8 bytes");
     Account account = new Account();
     account.setUsername(r.username());
     account.setPasswordHash(passwords.encode(r.password()));
@@ -88,7 +88,8 @@ public class DoctorService {
   public void disable(Long id) {
     Doctor d = byId(id);
     if (appointments.existsByDoctorIdAndStatusIn(id, ScheduleService.OPEN))
-      throw ApiException.conflict("Reassign or cancel open appointments before disabling doctor");
+      throw BusinessException.conflict(
+          "Reassign or cancel open appointments before disabling doctor");
     d.getAccount().setActive(false);
     accounts.save(d.getAccount());
   }

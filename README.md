@@ -1,302 +1,98 @@
-# KTPM-BTL — Dental Clinic Backend
+# Hệ thống đặt lịch phòng khám nha khoa
 
-Backend cơ bản cho hệ thống đặt lịch phòng khám nha khoa, xây dựng bằng **Java 17+, Spring Boot 3.5.16, Spring Data JPA, Spring Security JWT và SQLite**. Dự án chia rõ tầng controller, service, repository; có kiểm tra dữ liệu, phân quyền và kiểm thử tích hợp trên SQLite thật.
+Dự án xây dựng REST API để tiếp nhận yêu cầu khám, phân công bác sĩ và theo dõi lịch hẹn tại phòng khám nha khoa. Hệ thống có ba nhóm người dùng: khách hàng, quản trị viên (Admin) và bác sĩ.
 
-## Nghiệp vụ
+## 1. Bài toán và phạm vi
 
-| Người dùng | Chức năng |
+Khách hàng thường chọn giờ khám theo nhu cầu cá nhân, trong khi phòng khám cần sắp xếp dựa trên thời lượng dịch vụ và lịch của từng bác sĩ. Vì vậy, hệ thống tách **giờ khách mong muốn** khỏi **lịch khám được phân công**. Một yêu cầu đặt lịch chỉ chiếm giờ của bác sĩ sau khi Admin phân công.
+
+| Vai trò | Chức năng |
 | --- | --- |
-| Khách hàng | Không cần tài khoản; xem phòng khám, bác sĩ, dịch vụ; gửi yêu cầu đặt lịch; tra cứu hoặc hủy lịch bằng mã đặt lịch. |
-| Admin | Đăng nhập; quản lý lịch hẹn; phân công hoặc đổi bác sĩ; quản lý và vô hiệu hóa tài khoản bác sĩ. |
-| Bác sĩ | Đăng nhập; xem và cập nhật thông tin cá nhân; chỉ xem, xác nhận, hoàn thành hoặc hủy lịch được phân công cho mình. |
+| Khách hàng | Xem phòng khám, dịch vụ, bác sĩ và lịch trống; gửi yêu cầu khám; tra cứu hoặc hủy bằng mã hẹn, không cần tài khoản. |
+| Admin | Xem các yêu cầu, phân công hoặc đổi bác sĩ và giờ khám; quản lý, cập nhật và vô hiệu hóa tài khoản bác sĩ. |
+| Bác sĩ | Xem lịch được giao, xác nhận, hoàn thành hoặc hủy lịch; xem và cập nhật hồ sơ cá nhân. |
 
-**Khách hàng không chọn bác sĩ khi đặt lịch.** Khách chọn dịch vụ và ngày/giờ mong muốn; Admin quyết định bác sĩ, ngày và giờ khám thực tế. API xem lịch trống vẫn được giữ để tham khảo, không giữ chỗ và không bảo đảm yêu cầu sẽ được phân công vào giờ đó.
+Phạm vi hiện tại là backend. Giao diện người dùng, thanh toán, hồ sơ bệnh án và thông báo email/SMS chưa được triển khai.
 
-```mermaid
-flowchart LR
-    A[Khách gửi yêu cầu] --> B[PENDING]
-    B -->|Admin phân bác sĩ| C[ASSIGNED]
-    C -->|Bác sĩ xác nhận| D[CONFIRMED]
-    C -->|Khám xong| E[COMPLETED]
-    D -->|Khám xong| E
-    B --> F[CANCELLED]
-    C --> F
-    D --> F
-```
+## 2. Quy trình đặt lịch
 
-- Lịch mới luôn có trạng thái `PENDING`, chưa có bác sĩ.
-- Chỉ endpoint phân công của Admin được chuyển lịch sang `ASSIGNED`. Phân công lại lịch `ASSIGNED`/`CONFIRMED` sẽ đưa lịch về `ASSIGNED` để bác sĩ xác nhận lại.
-- `COMPLETED` và `CANCELLED` là trạng thái kết thúc, không mở lại hoặc phân công lại.
-- Ngày/giờ đặt lịch và phân công phải ở tương lai theo múi giờ `Asia/Ho_Chi_Minh`.
-- Giờ bắt đầu theo bước 30 phút, không có giây; toàn bộ ca khám phải nằm trong giờ mở cửa (dữ liệu mẫu: 08:00–17:00 mỗi ngày).
-- Thời lượng lấy từ dịch vụ. Hai ca liền kề được phép; hai ca chồng thời gian của cùng bác sĩ bị từ chối. Service kiểm tra trùng lịch và SQLite trigger bảo vệ ở tầng database.
-- Hủy lịch khách hàng bằng mã chỉ được thực hiện trước giờ bắt đầu. Admin/bác sĩ có thể đánh dấu hủy theo luồng trạng thái để xử lý nghiệp vụ.
-- Không vô hiệu hóa bác sĩ còn lịch `ASSIGNED`/`CONFIRMED`; cần chuyển lịch cho bác sĩ khác hoặc hủy trước.
+Khách gửi yêu cầu ở trạng thái **PENDING**. Admin chọn bác sĩ và thời gian thực tế, chuyển lịch sang **ASSIGNED**. Bác sĩ có thể xác nhận thành **CONFIRMED**, sau đó đánh dấu **COMPLETED** khi khám xong. Hệ thống cũng cho phép hoàn thành trực tiếp từ ASSIGNED. Lịch chưa kết thúc có thể chuyển sang CANCELLED theo quyền của người thao tác; COMPLETED và CANCELLED không được mở lại.
 
-## Chạy nhanh
+Các quy tắc chính:
 
-Yêu cầu **JDK 17 trở lên**, có `JAVA_HOME` hoặc `java` trong `PATH`. Maven Wrapper đã được đưa vào repository; lần chạy đầu cần Internet để tải Maven và các dependency.
+- Thời gian khám phải ở tương lai, bắt đầu theo bước 30 phút và nằm trọn trong giờ mở cửa, kể cả thời lượng dịch vụ.
+- Hai ca của cùng bác sĩ, cùng ngày bị trùng nếu `start_cũ < end_mới && end_cũ > start_mới`. Hai ca 09:00–10:00 và 10:00–10:30 được phép nối tiếp.
+- ASSIGNED, CONFIRMED và COMPLETED chiếm giờ; PENDING và CANCELLED không chặn lịch. Danh sách giờ trống chỉ mang tính tham khảo, không giữ chỗ cho khách.
+- Service kiểm tra lịch trước khi phân công. Trigger SQLite kiểm tra lại khi ghi dữ liệu; xung đột trả HTTP 409. Trường `@Version` phát hiện cập nhật đồng thời trên cùng bản ghi.
+- Khách chỉ hủy trước giờ hẹn. Bác sĩ không được truy cập lịch của người khác. Admin không thể vô hiệu hóa bác sĩ đang còn lịch ASSIGNED hoặc CONFIRMED.
 
-```bash
-git clone https://github.com/FlowBoat123/KTPM-BTL.git
-cd KTPM-BTL
-```
+## 3. Thiết kế và tổ chức mã nguồn
 
-Windows PowerShell:
+Backend sử dụng **Java 17, Spring Boot 3.5.16, Spring Data JPA/Hibernate, Spring Security và SQLite**. Request đi qua bộ lọc xác thực, Controller, Service và Repository trước khi truy cập dữ liệu.
 
-```powershell
-.\mvnw.cmd spring-boot:run
-```
+| Thành phần | Trách nhiệm |
+| --- | --- |
+| `src/main/java/com/dental/controller/`, `dto/` | Nhận request HTTP, kiểm tra đầu vào, chuyển đổi DTO và trả response JSON. |
+| `service/` | Xử lý nghiệp vụ đặt lịch, phân công, quản lý bác sĩ và xác thực; xác định ranh giới giao dịch. |
+| `repository/`, `entity/` | Truy cập dữ liệu qua Spring Data JPA và ánh xạ sáu bảng: accounts, doctors, clinics, dental_services, appointments, login_sessions. |
+| `security/`, `exception/`, `config/` | Kiểm tra JWT và quyền truy cập, ánh xạ lỗi nghiệp vụ sang HTTP, cấu hình và khởi tạo dữ liệu. |
+| `src/main/resources/` | `schema.sql` định nghĩa bảng, index và trigger SQLite; `application.yml` cấu hình kết nối, profile và JWT. |
+| `src/test/`, `.github/workflows/ci.yml` | Kiểm thử API, ranh giới kiến trúc, profile local và quá trình chạy bằng Docker. |
 
-Linux/macOS:
+Controller xử lý HTTP, còn Service trả kết quả hoặc ném `BusinessException`. Tầng Service không import thư viện HTTP, Servlet, JPA hay JDBC; quy tắc này được kiểm tra bằng ArchUnit. Spring vẫn quản lý Service và giao dịch qua `@Service`, `@Transactional`.
+
+Mật khẩu được băm bằng BCrypt. JWT có thời hạn 120 phút và gắn với phiên đăng nhập trong database. Bộ lọc kiểm tra cả token, phiên và trạng thái tài khoản, nên đăng xuất hoặc vô hiệu hóa tài khoản sẽ thu hồi quyền truy cập. Dữ liệu trả về không chứa password hash.
+
+## 4. Cài đặt và API
+
+Cần JDK 17 trở lên hoặc Docker. SQLite lưu dữ liệu trong file nên không cần cài database server.
 
 ```bash
-chmod +x mvnw
+./mvnw -B verify
 ./mvnw spring-boot:run
-```
-
-API chạy tại **http://localhost:8080**. Mặc định chỉ lắng nghe `127.0.0.1`. SQLite tự tạo file `dental-clinic.db` trong thư mục làm việc, không cần cài database server. Dữ liệu lưu lại khi tắt và mở ứng dụng.
-
-- **Swagger UI (Interactive API Docs)**: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-- **OpenAPI 3 JSON Schema**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
-
-Profile mặc định `demo` tạo dữ liệu mẫu khi chưa có: thông tin phòng khám, 3 dịch vụ và các tài khoản sau.
-
-| Username | Password | Vai trò |
-| --- | --- | --- |
-| `admin` | `Admin123!` | ADMIN |
-| `doctor1` | `Doctor123!` | DOCTOR |
-| `doctor2` | `Doctor123!` | DOCTOR |
-
-Các thông tin phòng khám, bác sĩ và giá dịch vụ đều là dữ liệu minh họa. Mật khẩu lưu bằng BCrypt; các tài khoản trên chỉ dùng để chạy thử.
-
-## Thử luồng chính
-
-Mở [docs/api.http](docs/api.http) bằng REST Client của VS Code hoặc HTTP Client của IntelliJ. Chọn ngày tương lai rồi chạy theo thứ tự: đặt lịch → đăng nhập Admin → phân bác sĩ → đăng nhập bác sĩ → xác nhận → hoàn thành. Sao chép `id`, `code`, `accessToken` từ response vào các biến tương ứng trong file.
-
-Ví dụ tạo lịch:
-
-```http
-POST /api/appointments
-Content-Type: application/json
-
-{
-  "patientName": "Nguyen Van A",
-  "phone": "0912345678",
-  "email": "patient@example.com",
-  "serviceId": 2,
-  "preferredDate": "2030-01-02",
-  "preferredTime": "09:00",
-  "note": "Kham rang"
-}
-```
-
-`2030-01-02` là ngày minh họa; thay bằng ngày tương lai. Email và ghi chú là tùy chọn. Response tạo lịch có HTTP `201`, `id`, mã UUID `code`, trạng thái `PENDING` và thông tin đặt lịch. Giữ riêng mã đặt lịch vì người có mã có thể tra cứu và hủy lịch trước giờ khám.
-
-Đăng nhập:
-
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{"username":"admin","password":"Admin123!"}
-```
-
-Response chứa `accessToken`, `tokenType`, `expiresAt`, `user`. Gửi token với header `Authorization: Bearer <accessToken>` cho các API quản lý.
-
-Phân công:
-
-```http
-PATCH /api/admin/appointments/1/assign
-Authorization: Bearer <admin-token>
-Content-Type: application/json
-
-{"doctorId":1,"appointmentDate":"2030-01-02","startTime":"09:00"}
-```
-
-Với dịch vụ mẫu số 2, thời lượng 60 phút, lịch trên kết thúc lúc 10:00. Đổi `1` theo ID thực tế trong response. Bác sĩ hoàn thành bằng `PATCH /api/doctor/appointments/{id}/status` với body `{"status":"COMPLETED"}`.
-
-## Danh sách API
-
-### Công khai
-
-| Method | Endpoint | Chức năng |
-| --- | --- | --- |
-| GET | `/api/clinic` | Thông tin phòng khám. |
-| GET | `/api/services` | Dịch vụ đang hoạt động. |
-| GET | `/api/doctors` | Bác sĩ đang hoạt động. |
-| GET | `/api/doctors/{id}` | Chi tiết bác sĩ đang hoạt động. |
-| GET | `/api/doctors/{id}/available-slots?date=2030-01-02&serviceId=2` | Lịch trống theo ngày và thời lượng dịch vụ; bỏ `serviceId` thì mặc định 30 phút. |
-| POST | `/api/appointments` | Tạo yêu cầu đặt lịch. |
-| GET | `/api/appointments/{code}` | Tra cứu bằng mã đặt lịch. |
-| DELETE | `/api/appointments/{code}` | Hủy lịch; trả về lịch với trạng thái `CANCELLED`. |
-
-### Xác thực
-
-| Method | Endpoint | Chức năng |
-| --- | --- | --- |
-| POST | `/api/auth/login` | Đăng nhập Admin hoặc bác sĩ. |
-| POST | `/api/auth/logout` | Thu hồi token hiện tại; HTTP `204`. |
-| GET | `/api/auth/me` | Thông tin tài khoản hiện tại. |
-
-JWT có thời hạn mặc định 120 phút. Mỗi JWT gắn với một phiên trong SQLite, nên đăng xuất thu hồi ngay token hiện tại; vô hiệu hóa tài khoản cũng chặn token đã cấp.
-
-### Bác sĩ — quyền DOCTOR
-
-| Method | Endpoint | Chức năng |
-| --- | --- | --- |
-| GET | `/api/doctor/appointments` | Các lịch được giao. |
-| GET | `/api/doctor/appointments/{id}` | Chi tiết lịch được giao. |
-| PATCH | `/api/doctor/appointments/{id}/status` | Body: `{"status":"CONFIRMED"}`, `COMPLETED` hoặc `CANCELLED`, theo luồng hợp lệ. |
-| GET | `/api/doctor/profile` | Hồ sơ cá nhân. |
-| PUT | `/api/doctor/profile` | Cập nhật hồ sơ cá nhân. |
-
-### Admin — quyền ADMIN
-
-| Method | Endpoint | Chức năng |
-| --- | --- | --- |
-| GET | `/api/admin/appointments` | Tất cả lịch hẹn. |
-| GET | `/api/admin/appointments/{id}` | Chi tiết lịch hẹn. |
-| PATCH | `/api/admin/appointments/{id}/assign` | Phân công hoặc đổi bác sĩ/ngày/giờ. |
-| PATCH | `/api/admin/appointments/{id}/status` | Thay đổi trạng thái theo luồng hợp lệ. |
-| GET | `/api/admin/doctors` | Tất cả bác sĩ, kể cả đã vô hiệu hóa. |
-| POST | `/api/admin/doctors` | Tạo tài khoản và hồ sơ bác sĩ. |
-| GET | `/api/admin/doctors/{id}` | Chi tiết bác sĩ. |
-| PUT | `/api/admin/doctors/{id}` | Cập nhật hồ sơ bác sĩ. |
-| DELETE | `/api/admin/doctors/{id}` | Vô hiệu hóa tài khoản; giữ hồ sơ/lịch sử; HTTP `204`. |
-| GET | `/api/admin/doctors/{id}/appointments` | Lịch hẹn của bác sĩ. |
-
-Body tạo bác sĩ:
-
-```json
-{
-  "username": "doctor3",
-  "password": "Doctor123!",
-  "fullName": "Bac si Le Chi",
-  "specialization": "Nha khoa tong quat",
-  "phone": "0900000003",
-  "email": "doctor3@example.com",
-  "description": "Bac si moi"
-}
-```
-
-Body cập nhật hồ sơ dùng các trường `fullName`, `specialization`, `phone`, `email`, `description`, không có `username`/`password`. PUT thay thế các trường hồ sơ này. Username phải duy nhất; mật khẩu tạo bác sĩ ít nhất 8 ký tự và tối đa 72 byte UTF-8.
-
-### Lỗi API
-
-| HTTP | Ý nghĩa |
-| --- | --- |
-| 400 | Thiếu trường, sai định dạng, thời gian không hợp lệ hoặc JSON chứa trường ngoài DTO. |
-| 401 | Chưa đăng nhập; sai mật khẩu; token sai, hết hạn hoặc đã thu hồi. |
-| 403 | Sai vai trò hoặc bác sĩ truy cập lịch của người khác. |
-| 404 | Không tìm thấy lịch hẹn, bác sĩ hoặc dịch vụ. |
-| 409 | Trùng lịch, trùng username, chuyển trạng thái sai hoặc vô hiệu hóa bác sĩ còn lịch đang mở. |
-
-Response lỗi có `timestamp`, `status`, `message`, `errors`; `errors` chứa lỗi theo trường khi validation thất bại.
-
-## Cấu trúc mã nguồn
-
-```text
-src/main/java/com/dental/
-├── DentalApplication.java
-├── controller/  # Public, Auth, Doctor, Admin: nhận HTTP và gọi service
-├── service/     # Appointment, Schedule, Doctor, Catalog, Auth: nghiệp vụ
-├── repository/  # Spring Data JPA: truy vấn dữ liệu
-├── entity/      # Entity, enum, converter ngày/giờ cho SQLite
-├── dto/         # Request, response và mapper; không trả entity/password ra API
-├── security/    # JWT, principal và authentication filter
-├── config/      # Security, Clock, dữ liệu khởi tạo
-└── exception/   # Lỗi nghiệp vụ và response lỗi thống nhất
-src/main/resources/
-├── application.yml
-└── schema.sql   # Bảng, khóa ngoại, index, trigger chống trùng lịch
-src/test/java/com/dental/ApiIntegrationTest.java
-docs/api.http
-.github/workflows/ci.yml
-```
-
-```mermaid
-flowchart TD
-    A[HTTP request] --> B[Security / JWT]
-    B --> C[Controller + DTO validation]
-    C --> D[Service / business rules]
-    D --> E[Repository / Spring Data JPA]
-    E --> F[(SQLite)]
-```
-
-Các bảng chính: `accounts`, `doctors`, `clinics`, `dental_services`, `appointments`, `login_sessions`. Account có role `ADMIN`/`DOCTOR`; Doctor liên kết một Account; Appointment liên kết Service và bác sĩ sau khi phân công. Ngày/giờ lưu dạng TEXT ISO để so sánh khung giờ nhất quán. Database bật khóa ngoại và có trigger ngăn chồng lịch. Pool SQLite dùng một kết nối cho backend demo.
-
-## Cấu hình
-
-| Biến môi trường | Mặc định | Công dụng |
-| --- | --- | --- |
-| `PORT` | `8080` | Cổng HTTP. |
-| `SERVER_ADDRESS` | `127.0.0.1` | Địa chỉ lắng nghe. |
-| `DB_PATH` | `dental-clinic.db` | File SQLite; thư mục cha phải tồn tại. |
-| `JWT_SECRET` | Sinh ngẫu nhiên khi khởi động | Khóa HMAC ít nhất 32 byte UTF-8; đặt giá trị cố định để JWT còn hiệu lực sau khi khởi động lại. |
-| `SPRING_PROFILES_ACTIVE` | `demo` nếu không đặt | `demo` tạo tài khoản mẫu; chọn `local` để không tạo các tài khoản mẫu. |
-| `ADMIN_USERNAME` | Rỗng | Username Admin khởi tạo ngoài profile demo. |
-| `ADMIN_PASSWORD` | Rỗng | Mật khẩu Admin khởi tạo ngoài profile demo, ít nhất 8 ký tự. |
-
-Ví dụ PowerShell chạy với database mới và tài khoản tự đặt:
-
-```powershell
-$env:SPRING_PROFILES_ACTIVE = "local"
-$env:DB_PATH = "clinic-local.db"
-$env:JWT_SECRET = "<thay-bang-khoa-ngau-nhien-it-nhat-32-byte>"
-$env:ADMIN_USERNAME = "clinic-admin"
-$env:ADMIN_PASSWORD = "<mat-khau-tu-dat>"
-.\mvnw.cmd spring-boot:run
-```
-
-Bootstrap chỉ tạo tài khoản chưa tồn tại, không đổi mật khẩu tài khoản đã có. Khi chuyển khỏi demo, dùng file DB mới nếu muốn bỏ các tài khoản mẫu đã lưu. `schema.sql` tạo bảng nếu chưa có; đây chưa phải hệ thống migration cho những thay đổi schema sau này.
-
-## Kiểm thử và đóng gói
-
-Windows:
-
-```powershell
-.\mvnw.cmd verify
-java -jar .\target\dental-clinic-0.0.1-SNAPSHOT.jar
-```
-
-Linux/macOS:
-
-```bash
-./mvnw verify
-java -jar target/dental-clinic-0.0.1-SNAPSHOT.jar
-```
-
-Kiểm thử tích hợp dùng file SQLite tạm riêng, thời gian cố định; không sửa database chạy thử. Các ca kiểm tra bao gồm đặt lịch, phân công, chuyển trạng thái, quyền sở hữu lịch, trùng giờ/thời lượng, hủy lịch, quản lý bác sĩ, JWT, đăng xuất, khóa ngoại và trigger database. GitHub Actions chạy `verify` trên JDK 17.
-
-## Triển khai bằng Docker (PostgreSQL 16)
-
-Hệ thống hỗ trợ đóng gói container với Multi-stage build (JDK 17 $\rightarrow$ JRE 17 Alpine) và PostgreSQL 16:
-
-```bash
+# Trên Windows dùng .\mvnw.cmd thay cho ./mvnw
+# Hoặc chạy bằng Docker:
 docker compose up -d --build
 ```
 
-Lệnh trên sẽ tự động:
-1. Khởi động PostgreSQL 16 Alpine container kèm healthcheck.
-2. Build và chạy Backend Spring Boot, tự động kết nối PostgreSQL và seed dữ liệu mẫu.
-3. Truy cập Swagger UI tại: `http://localhost:8080/swagger-ui/index.html`.
+API chạy tại http://localhost:8080; Swagger UI tại http://localhost:8080/swagger-ui/index.html. Profile demo có các tài khoản `admin / Admin123!`, `doctor1 / Doctor123!` và `doctor2 / Doctor123!`. Docker lưu database trong volume; `docker compose down` giữ lại dữ liệu.
 
-## Kiểm thử tải trên Kaggle CPU (Load Testing)
+[Đặc tả OpenAPI JSON](openapi.json) mô tả 26 API: 8 public, 3 xác thực, 5 dành cho bác sĩ và 10 dành cho Admin. Có thể đọc bằng [Swagger preview](https://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FFlowBoat123%2FKTPM-BTL%2Fmain%2Fopenapi.json); để gửi request, dùng Swagger UI của backend đang chạy. JSON có ví dụ đăng nhập, đặt lịch, phân công và đổi trạng thái.
 
-Dự án cung cấp kịch bản kiểm thử tải bằng **Python Locust** ([locustfile.py](locustfile.py)):
-- Mô phỏng đồng thời 50 users duyệt catalog, kiểm tra khung giờ trống và đặt lịch khám.
-- Chi tiết hướng dẫn thực hiện và vẽ biểu đồ hiệu năng trên Kaggle Notebook CPU: xem [docs/KAGGLE_LOAD_TEST.md](docs/KAGGLE_LOAD_TEST.md).
+Các API dùng GET, POST, DELETE, PUT và PATCH. Chẳng hạn, `GET /api/admin/appointments` và `POST /api/admin/doctors` đều yêu cầu token ADMIN. Mã lỗi gồm 400 khi đầu vào sai, 401 khi chưa xác thực, 403 khi không đủ quyền, 404 khi không tìm thấy dữ liệu và 409 khi xung đột. Xuất lại đặc tả bằng `python scripts/export_openapi.py`.
 
-## Phạm vi phiên bản cơ bản
+## 5. Kiểm thử và đánh giá hiệu năng
 
-Hiện có 26 endpoint theo tài liệu, SQLite lưu bền, dữ liệu mẫu, JWT và các ràng buộc chính. Chưa có frontend, gửi email/SMS, phân trang, quản lý ngày nghỉ/lịch làm việc riêng từng bác sĩ, API quản lý phòng khám/dịch vụ, đổi mật khẩu hay khôi phục tài khoản. Thông tin phòng khám/dịch vụ mẫu được khởi tạo trong `DataInitializer`.
+Bộ kiểm thử Java gồm **20 test**: 18 test tích hợp API, một test ranh giới kiến trúc và một test profile local. Các trường hợp được kiểm tra gồm phân quyền, chuyển trạng thái, trùng giờ, thu hồi phiên và hai yêu cầu phân công chồng giờ chạy đồng thời. Test dùng database tạm. Script `python scripts/docker_smoke.py` kiểm tra thêm luồng API và khả năng giữ dữ liệu SQLite sau khi container khởi động lại.
 
-## Tài liệu nguồn
+### Cấu hình đo trên Kaggle
 
-- [Mô tả bài toán và endpoint trên Google Docs](https://docs.google.com/document/d/1ccs7ITYj_TdFpNJUcTsn6Juie07U2mtpBiy--WwlAJk/edit?tab=t.0).
-- [Hội thoại bổ sung nghiệp vụ và kiến trúc](https://chatgpt.com/share/6ac6e733-2410-83ec-8a20-3dbfc287f70b).
-- [Spring Boot 3.5 — yêu cầu môi trường](https://docs.spring.io/spring-boot/3.5/system-requirements.html).
-- [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc).
+Lần đo ngày **26/10/2026** sử dụng SQLite và mã nguồn tại commit `298d97fcd96d0bb89c617bba782f47d2a4f23584`. Máy Kaggle có CPU Xeon 2,20 GHz, 4 CPU logic với quota 4 CPU và RAM giới hạn 30 GiB. Backend chạy JDK 17, heap 512 MiB, pool một kết nối SQLite, journal mode `delete`. Locust và backend cùng dùng tài nguyên máy này.
 
-SQLite được sử dụng thay MySQL theo yêu cầu hiện tại của dự án.
+Locust tạo các phiên giả lập, giữ **một phiên Admin** ở mỗi mức; số bác sĩ lần lượt là 5, 10, 20 và số khách hàng là 100, 200, 500. Mỗi bác sĩ đăng nhập bằng tài khoản riêng. Khách đọc thông tin, xem lịch trống, đặt và tra cứu lịch; 20% yêu cầu mới được hủy ngay. Admin đọc và phân công; bác sĩ xem, xác nhận và hoàn thành lịch. Giữa các tác vụ có thời gian nghỉ 1–2,5 giây.
+
+Sau khi tạo đủ phiên và đăng nhập xong, bộ đo làm nóng 15 giây, đặt lại thống kê rồi đo 120 giây với các phiên đang có. Login và warm-up được lưu riêng. Mỗi mức chạy một lần, với database mới; thời gian đo thực tế là 120,05–120,24 giây do chờ các request cuối kết thúc.
+
+### Kết quả
+
+| Khách / bác sĩ / Admin | Request | Request/giây | Trung bình (ms) | P95 (ms) | Lỗi |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 100 / 5 / 1 | 16.280 | 135,61 | 6,53 | 22 | 0% |
+| 200 / 10 / 1 | 32.477 | 270,50 | 10,26 | 32 | 0% |
+| 500 / 20 / 1 | 68.116 | 566,49 | 147,20 | 310 | 0% |
+
+P95 thể hiện mức độ trễ mà khoảng 95% request không vượt quá. Khi tăng từ 200 lên 500 khách, throughput tiếp tục tăng nhưng độ trễ tăng rõ: P95 từ 32 lên 310 ms. Không có request lỗi trong ba cửa sổ đo này.
+
+Ở mức lớn nhất có 2.906 lượt đặt lịch nhưng chỉ 41 lượt phân công. Điều này cho thấy tốc độ xử lý yêu cầu nghiệp vụ của một Admin thấp hơn tốc độ tạo yêu cầu trong kịch bản. Vì vậy, throughput API không thể dùng thay cho số ca khám được xử lý hoàn tất. Kết quả chỉ áp dụng cho commit và kịch bản đã đo; phần khóa phân công bổ sung sau lần đo này chưa có số liệu Kaggle mới.
+
+Số liệu được lưu tại [CSV tổng hợp](performance/kaggle-20261026/comparison.csv), [notebook đã thực thi](notebooks/results/fixed_admin_kaggle_20261026.ipynb) và [ZIP gốc](performance/kaggle-20261026/results.zip) chứa metadata, CSV và log từng mức. [Bản Kaggle](https://www.kaggle.com/code/flowboat/ktpm-phase-1-sqlite-cpu-baseline?scriptVersionId=362443343) hiện riêng tư; notebook có output đã được lưu trong repository.
+
+Để chạy lại, import [notebook mẫu](notebooks/phase1_sqlite_kaggle.ipynb) vào Kaggle, chọn Accelerator None, Internet On rồi Save & Run All. Notebook mẫu lấy mã từ `main` và ghi lại commit thực tế. Notebook kết quả cố định commit nêu trên để tái lập phép đo. Có thể chạy thử ở máy bằng cách cài `requirements-load.txt`, sau đó dùng `python scripts/run_load_test.py --environment local --customers 10 --doctors 3 --spawn-rate 10 --warmup 2 --duration 8 --output reports/local-smoke`.
+
+## 6. Hạn chế và hướng phát triển
+
+Danh sách lịch hẹn chưa phân trang; pool SQLite chỉ có một kết nối và mỗi request có xác thực đều kiểm tra phiên trong database. Đây là các vị trí cần đo thêm trước khi chọn cách tối ưu. Một Admin có thể trở thành điểm nghẽn xử lý khi yêu cầu PENDING tăng. Hệ thống cũng chưa có migration schema, lịch nghỉ riêng cho bác sĩ hoặc chức năng đổi mật khẩu.
+
+Phép đo hiện tại chưa xác định tải tối đa và chưa đánh giá độ dao động giữa các lần chạy. Bước tiếp theo là đo CPU, thời gian chờ và truy vấn, sau đó so sánh cải tiến bằng cùng phần cứng, dữ liệu và kịch bản.
+
+Yêu cầu bài tập: [Kiến trúc phần mềm 2026](https://github.com/maytinhdibo/KTPM-architecture-solution/blob/main/2026.md).

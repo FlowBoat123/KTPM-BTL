@@ -2,11 +2,10 @@ package com.dental.service;
 
 import com.dental.dto.*;
 import com.dental.entity.*;
-import com.dental.exception.ApiException;
+import com.dental.exception.BusinessException;
 import com.dental.repository.AppointmentRepository;
 import java.time.*;
 import java.util.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,13 +34,13 @@ public class AppointmentService {
   private Appointment byId(Long id) {
     return appointments
         .findById(id)
-        .orElseThrow(() -> ApiException.notFound("Appointment not found"));
+        .orElseThrow(() -> BusinessException.notFound("Appointment not found"));
   }
 
   private Appointment byCode(String code) {
     return appointments
         .findByCode(code)
-        .orElseThrow(() -> ApiException.notFound("Appointment not found"));
+        .orElseThrow(() -> BusinessException.notFound("Appointment not found"));
   }
 
   @Transactional
@@ -90,7 +89,7 @@ public class AppointmentService {
   private Appointment owned(Long account, Long id) {
     Appointment a = byId(id);
     if (a.getDoctor() == null || !a.getDoctor().getAccount().getId().equals(account))
-      throw new ApiException(HttpStatus.FORBIDDEN, "Appointment is not assigned to this doctor");
+      throw BusinessException.forbidden("Appointment is not assigned to this doctor");
     return a;
   }
 
@@ -103,7 +102,7 @@ public class AppointmentService {
     Appointment a = byId(id);
     if (a.getStatus() == AppointmentStatus.COMPLETED
         || a.getStatus() == AppointmentStatus.CANCELLED)
-      throw ApiException.conflict("Terminal appointments cannot be reassigned");
+      throw BusinessException.conflict("Terminal appointments cannot be reassigned");
     Doctor doctor = catalog.activeDoctorWithLock(r.doctorId());
     LocalTime end =
         schedule.validateSlot(
@@ -133,7 +132,7 @@ public class AppointmentService {
     LocalDate date = a.getAppointmentDate() == null ? a.getPreferredDate() : a.getAppointmentDate();
     LocalTime time = a.getStartTime() == null ? a.getPreferredTime() : a.getStartTime();
     if (!LocalDateTime.of(date, time).isAfter(LocalDateTime.now(clock)))
-      throw ApiException.conflict("Cannot cancel an appointment after its start time");
+      throw BusinessException.conflict("Cannot cancel an appointment after its start time");
     return transition(a, AppointmentStatus.CANCELLED);
   }
 
@@ -150,7 +149,8 @@ public class AppointmentService {
           default -> Set.of();
         };
     if (!allowed.contains(next))
-      throw ApiException.conflict("Invalid status transition: " + a.getStatus() + " -> " + next);
+      throw BusinessException.conflict(
+          "Invalid status transition: " + a.getStatus() + " -> " + next);
     a.setStatus(next);
     return ViewMapper.appointment(appointments.saveAndFlush(a));
   }

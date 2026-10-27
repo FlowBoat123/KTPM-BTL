@@ -29,7 +29,8 @@ COPY --from=builder /app/target/dental-clinic-*.jar app.jar
 
 ENV PORT=8080 \
     SERVER_ADDRESS=0.0.0.0 \
-    SPRING_PROFILES_ACTIVE=postgres,demo
+    SPRING_PROFILES_ACTIVE=demo \
+    DB_PATH=/app/data/dental-clinic.db
 
 EXPOSE 8080
 
