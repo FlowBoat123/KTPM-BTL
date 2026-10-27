@@ -30,6 +30,25 @@ Các quy tắc chính:
 
 Backend sử dụng **Java 17, Spring Boot 3.5.16, Spring Data JPA/Hibernate, Spring Security và SQLite**. Request đi qua bộ lọc xác thực, Controller, Service và Repository trước khi truy cập dữ liệu.
 
+```mermaid
+flowchart LR
+    Client["Khách hàng · Admin · Bác sĩ<br/>Swagger / HTTP client"]
+    subgraph Backend["Backend Spring Boot — chạy JAR hoặc Docker"]
+        Security["Spring Security<br/>JWT và phân quyền"]
+        Controller["REST Controller + DTO<br/>Validation · JSON"]
+        Service["Service<br/>Nghiệp vụ · giao dịch"]
+        Repository["Repository + Entity<br/>Spring Data JPA / Hibernate"]
+        Database[("SQLite<br/>6 bảng · index · trigger")]
+        Security --> Controller --> Service --> Repository --> Database
+        Security -. "AuthService: kiểm tra phiên" .-> Service
+    end
+    Volume["Docker volume: sqlite-data<br/>File DB tại /app/data"]
+    Client -->|HTTP / JSON| Security
+    Database -. "Khi chạy Docker" .-> Volume
+```
+
+*Sơ đồ kiến trúc và lưu trữ dữ liệu.* Các API công khai không yêu cầu token; API Admin và bác sĩ được kiểm tra quyền trước khi vào Controller. SQLite là file dữ liệu của backend. Khi chạy Docker, file này nằm trong volume để giữ dữ liệu sau khi container khởi động lại.
+
 | Thành phần | Trách nhiệm |
 | --- | --- |
 | `src/main/java/com/dental/controller/`, `dto/` | Nhận request HTTP, kiểm tra đầu vào, chuyển đổi DTO và trả response JSON. |
