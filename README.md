@@ -31,19 +31,17 @@ Các quy tắc chính:
 Backend sử dụng **Java 17, Spring Boot 3.5.16, Spring Data JPA/Hibernate, Spring Security và SQLite**. Request đi qua bộ lọc xác thực, Controller, Service và Repository trước khi truy cập dữ liệu.
 
 ```mermaid
-flowchart LR
+flowchart TB
     Client["Khách hàng · Admin · Bác sĩ<br/>Swagger / HTTP client"]
     subgraph Backend["Backend Spring Boot — chạy JAR hoặc Docker"]
-        Security["Spring Security<br/>JWT và phân quyền"]
-        Controller["REST Controller + DTO<br/>Validation · JSON"]
+        API["Spring Security → REST Controller<br/>JWT · phân quyền · DTO / validation"]
         Service["Service<br/>Nghiệp vụ · giao dịch"]
         Repository["Repository + Entity<br/>Spring Data JPA / Hibernate"]
         Database[("SQLite<br/>6 bảng · index · trigger")]
-        Security --> Controller --> Service --> Repository --> Database
-        Security -. "AuthService: kiểm tra phiên" .-> Service
+        API --> Service --> Repository --> Database
     end
     Volume["Docker volume: sqlite-data<br/>File DB tại /app/data"]
-    Client -->|HTTP / JSON| Security
+    Client -->|HTTP / JSON| API
     Database -. "Khi chạy Docker" .-> Volume
 ```
 
