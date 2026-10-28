@@ -30,22 +30,51 @@ Các quy tắc chính:
 
 Backend sử dụng **Java 17, Spring Boot 3.5.16, Spring Data JPA/Hibernate, Spring Security và SQLite**. Request đi qua bộ lọc xác thực, Controller, Service và Repository trước khi truy cập dữ liệu.
 
+### Luồng xử lý request
+
 ```mermaid
-flowchart TB
-    Client["Khách hàng · Admin · Bác sĩ<br/>Swagger / HTTP client"]
-    subgraph Backend["Backend Spring Boot — chạy JAR hoặc Docker"]
-        API["Spring Security → REST Controller<br/>JWT · phân quyền · DTO / validation"]
-        Service["Service<br/>Nghiệp vụ · giao dịch"]
-        Repository["Repository + Entity<br/>Spring Data JPA / Hibernate"]
-        Database[("SQLite<br/>6 bảng · index · trigger")]
-        API --> Service --> Repository --> Database
-    end
-    Volume["Docker volume: sqlite-data<br/>File DB tại /app/data"]
+flowchart LR
+    Client["Người dùng<br/>Swagger / HTTP client"]
+    API["Controller + Security<br/>JWT · quyền · DTO"]
+    Service["Service<br/>Nghiệp vụ · giao dịch"]
+    Repository["Repository<br/>JPA / Hibernate"]
+    Database[("SQLite<br/>Bảng · index · trigger")]
     Client -->|HTTP / JSON| API
-    Database -. "Khi chạy Docker" .-> Volume
+    API --> Service --> Repository --> Database
+    classDef app fill:#e8f0fe,stroke:#3b6ea8,color:#1f2937
+    classDef data fill:#e7f5eb,stroke:#3a8551,color:#1f2937
+    class API,Service,Repository app
+    class Database data
 ```
 
-*Sơ đồ kiến trúc và lưu trữ dữ liệu.* Các API công khai không yêu cầu token; API Admin và bác sĩ được kiểm tra quyền trước khi vào Controller. SQLite là file dữ liệu của backend. Khi chạy Docker, file này nằm trong volume để giữ dữ liệu sau khi container khởi động lại.
+Các API công khai không yêu cầu token; API Admin và bác sĩ được kiểm tra quyền trước khi vào Controller. Luồng xử lý này giữ nguyên khi chạy ứng dụng trực tiếp bằng Java hoặc đóng gói bằng Docker.
+
+### Triển khai bằng Docker Compose
+
+```mermaid
+flowchart LR
+    Client["Swagger / HTTP client"]
+    subgraph Host["Máy chạy Docker Compose"]
+        Port["Cổng truy cập trên máy<br/>127.0.0.1:8080"]
+        subgraph Container["Container: backend"]
+            App["Java 17 · Spring Boot<br/>app.jar · cổng 8080"]
+            File[("File SQLite<br/>/app/data/dental-clinic.db")]
+            App -->|SQLite JDBC: đọc / ghi| File
+        end
+        Volume[("Docker volume<br/>sqlite-data")]
+        Port -->|Ánh xạ cổng| App
+        Volume -. "Gắn vào /app/data" .-> File
+    end
+    Client -->|HTTP / JSON| Port
+    classDef app fill:#e8f0fe,stroke:#3b6ea8,color:#1f2937
+    classDef data fill:#e7f5eb,stroke:#3a8551,color:#1f2937
+    class App app
+    class File,Volume data
+```
+
+Docker đóng gói môi trường Java và chạy `app.jar` trong container `backend`. Compose ánh xạ cổng 8080 của container ra `127.0.0.1:8080` trên máy; có thể đổi cổng phía máy bằng `HOST_PORT`. SQLite được ứng dụng đọc/ghi trực tiếp qua JDBC.
+
+Đường nét đứt biểu diễn **volume `sqlite-data` được gắn vào thư mục `/app/data` của container**. File `/app/data/dental-clinic.db` được lưu trong volume, nên tạo lại container vẫn giữ dữ liệu nếu giữ volume. Khi chạy bằng Maven/Java tại máy, file mặc định là `dental-clinic.db` trong thư mục chạy ứng dụng; `DB_PATH` cho phép đổi vị trí lưu.
 
 | Thành phần | Trách nhiệm |
 | --- | --- |
