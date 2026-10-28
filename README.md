@@ -52,29 +52,21 @@ Các API công khai không yêu cầu token; API Admin và bác sĩ được ki�
 ### Triển khai bằng Docker Compose
 
 ```mermaid
-flowchart LR
-    Client["Swagger / HTTP client"]
-    subgraph Host["Máy chạy Docker Compose"]
-        Port["Cổng truy cập trên máy<br/>127.0.0.1:8080"]
-        subgraph Container["Container: backend"]
-            App["Java 17 · Spring Boot<br/>app.jar · cổng 8080"]
-            File[("File SQLite<br/>/app/data/dental-clinic.db")]
-            App -->|SQLite JDBC: đọc / ghi| File
-        end
-        Volume[("Docker volume<br/>sqlite-data")]
-        Port -->|Ánh xạ cổng| App
-        Volume -. "Gắn vào /app/data" .-> File
-    end
-    Client -->|HTTP / JSON| Port
+flowchart TB
+    Client["1. Gửi yêu cầu API<br/>Swagger / HTTP client"]
+    App["2. Xử lý yêu cầu<br/>Container backend chạy app.jar"]
+    Data[("3. Lưu dữ liệu<br/>Volume sqlite-data<br/>Chứa file dental-clinic.db")]
+    Client -->|HTTP / JSON tại localhost:8080| App
+    App -->|Đọc / ghi SQLite qua /app/data| Data
     classDef app fill:#e8f0fe,stroke:#3b6ea8,color:#1f2937
     classDef data fill:#e7f5eb,stroke:#3a8551,color:#1f2937
     class App app
-    class File,Volume data
+    class Data data
 ```
 
-Docker đóng gói môi trường Java và chạy `app.jar` trong container `backend`. Compose ánh xạ cổng 8080 của container ra `127.0.0.1:8080` trên máy; có thể đổi cổng phía máy bằng `HOST_PORT`. SQLite được ứng dụng đọc/ghi trực tiếp qua JDBC.
+Đọc hình từ trên xuống: công cụ gửi yêu cầu đến backend; backend xử lý bằng Java và đọc/ghi file SQLite lưu trong volume. **Container chạy ứng dụng, volume giữ dữ liệu.** Khi tạo lại container, ứng dụng vẫn dùng được file cũ nếu giữ volume.
 
-Đường nét đứt biểu diễn **volume `sqlite-data` được gắn vào thư mục `/app/data` của container**. File `/app/data/dental-clinic.db` được lưu trong volume, nên tạo lại container vẫn giữ dữ liệu nếu giữ volume. Khi chạy bằng Maven/Java tại máy, file mặc định là `dental-clinic.db` trong thư mục chạy ứng dụng; `DB_PATH` cho phép đổi vị trí lưu.
+Trong Compose, volume `sqlite-data` được gắn vào thư mục `/app/data`, nên đường dẫn ứng dụng dùng là `/app/data/dental-clinic.db`. Cổng truy cập mặc định là `127.0.0.1:8080` và có thể đổi bằng `HOST_PORT`. Khi chạy bằng Maven/Java tại máy, file mặc định là `dental-clinic.db` trong thư mục chạy ứng dụng; `DB_PATH` cho phép đổi vị trí lưu.
 
 | Thành phần | Trách nhiệm |
 | --- | --- |
