@@ -137,8 +137,10 @@ Số liệu được lưu tại [CSV tổng hợp](performance/kaggle-20261026/c
 
 ## 6. Hạn chế và hướng phát triển
 
-Danh sách lịch hẹn chưa phân trang; pool SQLite chỉ có một kết nối và mỗi request có xác thực đều kiểm tra phiên trong database. Đây là các vị trí cần đo thêm trước khi chọn cách tối ưu. Một Admin có thể trở thành điểm nghẽn xử lý khi yêu cầu PENDING tăng. Hệ thống cũng chưa có migration schema, lịch nghỉ riêng cho bác sĩ hoặc chức năng đổi mật khẩu.
+Danh sách lịch hẹn hiện chưa phân trang, nên khi dữ liệu tăng, việc tải và xem danh sách sẽ bất tiện hơn. Phòng khám cũng chưa thể khai báo lịch nghỉ riêng cho bác sĩ, và người dùng chưa có chức năng đổi mật khẩu. Về nghiệp vụ, mọi yêu cầu đặt lịch đều cần Admin phân công; nếu khách đặt nhiều hơn khả năng xử lý của Admin, các yêu cầu PENDING sẽ dồn lại dù API vẫn phản hồi bình thường.
 
-Phép đo hiện tại chưa xác định tải tối đa và chưa đánh giá độ dao động giữa các lần chạy. Bước tiếp theo là đo CPU, thời gian chờ và truy vấn, sau đó so sánh cải tiến bằng cùng phần cứng, dữ liệu và kịch bản.
+SQLite giúp việc cài đặt đơn giản, nhưng cấu hình hiện tại chỉ dùng một kết nối database. Mỗi request cần đăng nhập cũng phải kiểm tra phiên trong database. Hai điểm này cần được đo kỹ hơn khi tăng tải. Dự án chưa có công cụ quản lý thay đổi schema, nên việc cập nhật cấu trúc bảng khi đã có dữ liệu cũng cần được bổ sung.
+
+Các lần kiểm thử vừa rồi cho biết hệ thống hoạt động ra sao ở ba mức tải đã chọn, nhưng chưa đủ để kết luận tải tối đa vì mỗi mức mới chạy một lần. Hướng tiếp theo là bổ sung phân trang, lịch nghỉ và đổi mật khẩu; đồng thời chạy lặp lại phép đo, theo dõi CPU, truy vấn và thời gian chờ kết nối. Sau mỗi thay đổi, cần đo lại với cùng phần cứng, dữ liệu và kịch bản để biết cải tiến có hiệu quả đến đâu.
 
 Yêu cầu bài tập: [Kiến trúc phần mềm 2026](https://github.com/maytinhdibo/KTPM-architecture-solution/blob/main/2026.md).
